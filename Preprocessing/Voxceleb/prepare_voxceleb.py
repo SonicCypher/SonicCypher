@@ -34,7 +34,7 @@ META = "meta"
 def prepare_voxceleb(
     data_folder,
     save_folder,
-    verification_pairs_file,
+    #verification_pairs_file,
     splits=["train", "dev", "test"],
     split_ratio=[90, 10],
     seg_dur=3.0,
