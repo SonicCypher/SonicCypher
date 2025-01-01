@@ -45,14 +45,16 @@ class MFCCDataset(Dataset):
         return len(self.mfcc_files)
 
     def __getitem__(self, idx):
-        """
-        Load and return an MFCC sample and its corresponding speaker ID.
-        """
-        mfcc_data = np.load(self.mfcc_files[idx])
-        spkid_data = np.load(self.spkid_files[idx])
-        # Add channel dimension to mfcc_data
-        mfcc_data = np.expand_dims(mfcc_data, axis=0)
-        return torch.tensor(mfcc_data, dtype=torch.float32), torch.tensor(spkid_data, dtype=torch.long)
+      """
+      Load and return an MFCC sample and its corresponding speaker ID.
+      """
+      mfcc_data = np.load(self.mfcc_files[idx])
+      spkid_data = np.load(self.spkid_files[idx])
+      # Add channel dimension to mfcc_data
+      mfcc_data = np.expand_dims(mfcc_data, axis=0)
+      # Ensure spkid_data is 1D (flatten if necessary)
+      spkid_data = np.squeeze(spkid_data)
+      return torch.tensor(mfcc_data, dtype=torch.float32), torch.tensor(spkid_data, dtype=torch.long)
         
 
 def train_model(model, train_loader, val_loader, epochs, warmup_steps, device, patience=5, pretrained=False):
@@ -126,8 +128,8 @@ def train_model(model, train_loader, val_loader, epochs, warmup_steps, device, p
             break
 
 # Paths to the directories containing the MFCC and speaker ID files
-mfcc_folder = "/home/hansini/FYP/SonicCypher/Model/output/mfcc"
-spkid_folder = "/home/hansini/FYP/SonicCypher/Model/output/spkid"
+mfcc_folder = "./Model/output/mfcc"
+spkid_folder = "./Model/output/spkid"
 
 # Load file paths
 mfcc_files = sorted([os.path.join(mfcc_folder, f) for f in os.listdir(mfcc_folder) if f.endswith('.npy')])
@@ -145,7 +147,7 @@ train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 model = res2net50_v1b(num_classes=len(np.unique([np.load(f) for f in spkid_files])))
 
 epochs = 10
