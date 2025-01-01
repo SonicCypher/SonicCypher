@@ -1,6 +1,7 @@
 import os
 import random
 import sys
+import numpy as np
 
 import torch
 import torchaudio
@@ -9,8 +10,8 @@ from hyperpyyaml import load_hyperpyyaml
 import speechbrain as sb
 from speechbrain.utils.data_utils import download_file
 from speechbrain.utils.distributed import run_on_main
-
-
+import speechbrain as sb
+from torch.utils.data import DataLoader
 
 def dataio_prep(data_folder, save_folder, train_annotation, valid_annotation):
     "Creates the datasets and their data processing pipelines."
@@ -69,3 +70,20 @@ def dataio_prep(data_folder, save_folder, train_annotation, valid_annotation):
     sb.dataio.dataset.set_output_keys(datasets, ["id", "sig", "spk_id_encoded"])
 
     return train_data, valid_data, label_encoder
+
+def MFCC_extracter(data, save_folder):
+    feats = sb.lobes.features.MFCC(n_mfcc=80, deltas=False, context=False)
+
+    # Assuming you have defined your dataset
+    train_dataloader = DataLoader(data, batch_size=25, shuffle=True)
+
+    for batch in train_dataloader:
+        wavs = batch["sig"]  # Get 'sig' from the batch
+        ids = batch["id"]    # Get unique IDs from the batch
+        features = feats(wavs)
+
+        for mfcc, file_id in zip(features, ids):
+            # Save each MFCC file with a unique name
+            save_path = os.path.join(save_folder, f"{file_id}.npy")
+            np.save(save_path, mfcc.numpy())  # Save as .npy file
+    print(f"Saved MFCCs")
