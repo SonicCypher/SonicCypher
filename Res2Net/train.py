@@ -150,7 +150,7 @@ val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 device = torch.device("cpu")
 model = res2net50_v1b(num_classes=len(np.unique([np.load(f) for f in spkid_files])))
 
-epochs = 10
+epochs = 15
 warmup_steps = 4000
 patience = 5  # Early stopping patience
 pretrained = False  # Load pretrained model if available
