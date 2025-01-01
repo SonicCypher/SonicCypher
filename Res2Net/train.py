@@ -2,9 +2,10 @@ from models.resnet_models import res2net50_v1b
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, random_split
 import numpy as np
 from math import pow
+import os
 
 # ScheduledOptim class definition
 class ScheduledOptim(object):
@@ -33,15 +34,26 @@ class ScheduledOptim(object):
         return new_lr
 
 class MFCCDataset(Dataset):
-    def __init__(self, features, labels):
-        self.features = features
-        self.labels = labels
+    def __init__(self, mfcc_files, spkid_files):
+        """
+        Initialize the dataset with paths to MFCC and speaker ID files.
+        """
+        self.mfcc_files = mfcc_files
+        self.spkid_files = spkid_files
 
     def __len__(self):
-        return len(self.features)
+        return len(self.mfcc_files)
 
     def __getitem__(self, idx):
-        return torch.tensor(self.features[idx], dtype=torch.float32), torch.tensor(self.labels[idx], dtype=torch.long)
+        """
+        Load and return an MFCC sample and its corresponding speaker ID.
+        """
+        mfcc_data = np.load(self.mfcc_files[idx])
+        spkid_data = np.load(self.spkid_files[idx])
+        # Add channel dimension to mfcc_data
+        mfcc_data = np.expand_dims(mfcc_data, axis=0)
+        return torch.tensor(mfcc_data, dtype=torch.float32), torch.tensor(spkid_data, dtype=torch.long)
+        
 
 def train_model(model, train_loader, val_loader, epochs, warmup_steps, device, patience=5, pretrained=False):
     if pretrained:
@@ -113,29 +125,32 @@ def train_model(model, train_loader, val_loader, epochs, warmup_steps, device, p
             print("Early stopping triggered.")
             break
 
-num_samples = 1000
-num_features = 20
-sequence_length = 50
-num_classes = 10
+# Paths to the directories containing the MFCC and speaker ID files
+mfcc_folder = "/home/hansini/FYP/SonicCypher/Model/output/mfcc"
+spkid_folder = "/home/hansini/FYP/SonicCypher/Model/output/spkid"
 
-X_train = np.random.rand(num_samples, 1, num_features, sequence_length)
-y_train = np.random.randint(0, num_classes, size=num_samples)
+# Load file paths
+mfcc_files = sorted([os.path.join(mfcc_folder, f) for f in os.listdir(mfcc_folder) if f.endswith('.npy')])
+spkid_files = sorted([os.path.join(spkid_folder, f) for f in os.listdir(spkid_folder) if f.endswith('.npy')])
 
-X_val = np.random.rand(int(num_samples * 0.2), 1, num_features, sequence_length)
-y_val = np.random.randint(0, num_classes, size=int(num_samples * 0.2))
+# Create the dataset
+full_dataset = MFCCDataset(mfcc_files, spkid_files)
 
-train_dataset = MFCCDataset(X_train, y_train)
-val_dataset = MFCCDataset(X_val, y_val)
+# Split into training and validation datasets
+train_size = int(0.8 * len(full_dataset))
+val_size = len(full_dataset) - train_size
+train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
 
+# Create DataLoaders
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = res2net50_v1b(num_classes=num_classes)
+model = res2net50_v1b(num_classes=len(np.unique([np.load(f) for f in spkid_files])))
 
 epochs = 10
 warmup_steps = 4000
-patience = 3  # Early stopping patience
+patience = 5  # Early stopping patience
 pretrained = False  # Load pretrained model if available
 
 train_model(model, train_loader, val_loader, epochs, warmup_steps, device, patience, pretrained)
