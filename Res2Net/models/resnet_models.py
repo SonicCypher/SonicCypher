@@ -80,7 +80,7 @@ class ResNet(nn.Module):
         return F.log_softmax(out, dim=-1)
 
 class Res2Net(nn.Module):
-    def __init__(self, block, layers, baseWidth=26, scale=4, m=0.35, num_classes=1000, loss='softmax', **kwargs):
+    def __init__(self, block, layers, baseWidth=26, scale=4, m=0.35, num_classes=10, loss='softmax', **kwargs):
         self.inplanes = 16
         super(Res2Net, self).__init__()
         self.loss = loss

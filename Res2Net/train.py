@@ -1,4 +1,4 @@
-from models.resnet_models import res2net50_v1b
+from models.resnet_models import se_res2net50_v1b
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -7,7 +7,6 @@ import numpy as np
 from math import pow
 import os
 
-# ScheduledOptim class definition
 class ScheduledOptim(object):
     def __init__(self, optimizer, n_warmup_steps):
         self.optimizer = optimizer
@@ -126,6 +125,7 @@ def train_model(model, train_loader, val_loader, epochs, warmup_steps, device, p
         if no_improve_epochs >= patience:
             print("Early stopping triggered.")
             break
+        print("One epoch is done.")
 
 # Paths to the directories containing the MFCC and speaker ID files
 mfcc_folder = "./Model/output/mfcc"
@@ -144,14 +144,14 @@ val_size = len(full_dataset) - train_size
 train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
 
 # Create DataLoaders
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+train_loader = DataLoader(train_dataset, batch_size=5, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=5, shuffle=False)
 
 device = torch.device("cpu")
-model = res2net50_v1b(num_classes=len(np.unique([np.load(f) for f in spkid_files])))
+model = se_res2net50_v1b(num_classes=len(np.unique([np.load(f) for f in spkid_files])))
 
-epochs = 15
-warmup_steps = 4000
+epochs = 20
+warmup_steps = 1000
 patience = 5  # Early stopping patience
 pretrained = False  # Load pretrained model if available
 
