@@ -5,7 +5,7 @@ from Preprocessing.Voxceleb.prepare_voxceleb import prepare_voxceleb
 # Import the required functions
 from Model.model import dataio_prep, MFCC_extracter_train,MFCC_extracter_valid  # Replace 'your_module' with the actual module name
 
-def main():
+def MFCC_Extraction():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -37,6 +37,8 @@ def main():
     print(train_mfccs.shape, train_spkids.shape)
     print(valid_mfccs.shape, valid_spkids.shape)
 
+    return train_mfccs, train_spkids
 
-if __name__ == "__main__":
-    main()
+
+# if __name__ == "__main__":
+#     main()
