@@ -2,6 +2,7 @@ import os
 import random
 import sys
 import numpy as np
+from tqdm import tqdm
 
 import torch
 import torchaudio
@@ -10,8 +11,13 @@ from hyperpyyaml import load_hyperpyyaml
 import speechbrain as sb
 from speechbrain.utils.data_utils import download_file
 from speechbrain.utils.distributed import run_on_main
+from speechbrain.utils.data_utils import get_all_files
+from speechbrain.augment.preparation import prepare_csv
+from speechbrain.augment.time_domain import AddNoise
+from speechbrain.augment.augmenter import Augmenter
 import speechbrain as sb
 from torch.utils.data import DataLoader
+
 
 def dataio_prep(data_folder, save_folder, train_annotation, valid_annotation):
     "Creates the datasets and their data processing pipelines."
@@ -71,19 +77,111 @@ def dataio_prep(data_folder, save_folder, train_annotation, valid_annotation):
 
     return train_data, valid_data, label_encoder
 
-def MFCC_extracter(data, save_folder):
-    feats = sb.lobes.features.MFCC(n_mfcc=80, deltas=False, context=False)
+def MFCC_extracter_train(data, output_dir, device):
+
+    noise_folder = r"Model\noise\free-sound"
+    speech_folder = r"Model\noise\librivox"
+
+    noise_filelist = get_all_files(noise_folder, match_and=['.wav'])
+    speech_filelist = get_all_files(speech_folder, match_and=['.wav'])
+
+    noise_csv = r"Model\noise_csv\noise.csv"
+    speech_csv = r"Model\noise_csv\speech.csv"
+
+    prepare_csv(noise_filelist, noise_csv)
+    prepare_csv(speech_filelist, speech_csv)
+
+    add_noise = AddNoise(
+        csv_file = noise_csv, 
+        snr_low=0, 
+        snr_high=16, 
+        noise_sample_rate=16000, 
+        clean_sample_rate=16000, 
+        num_workers=4
+        )
+    
+    add_babble = AddNoise(
+        csv_file = speech_csv, 
+        snr_low=0, 
+        snr_high=16, 
+        noise_sample_rate=16000, 
+        clean_sample_rate=16000, 
+        num_workers=0, 
+        )
+    
+    augmenter = Augmenter(
+        parallel_augment= True,
+        concat_original= True,
+        min_augmentations= 2,
+        max_augmentations= 2,
+        augment_prob=1.0,
+        augmentations=[add_noise, add_babble],
+    )
+
+    feats = sb.lobes.features.MFCC(n_mfcc=80, n_mels=100, deltas=False, context=False)
 
     # Assuming you have defined your dataset
-    train_dataloader = DataLoader(data, batch_size=25, shuffle=True)
+    train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=4)
 
-    for batch in train_dataloader:
-        wavs = batch["sig"]  # Get 'sig' from the batch
+    os.makedirs(output_dir, exist_ok=True)
+
+    mfcc_dir = os.path.join(output_dir, 'mfcc')
+    os.makedirs(mfcc_dir, exist_ok=True)
+
+    spkid_dir = os.path.join(output_dir, 'spkid')
+    os.makedirs(spkid_dir, exist_ok=True)
+
+    for batch_num, batch in enumerate(tqdm(train_dataloader, desc="Processing Batches", dynamic_ncols=True)):
+        batch = batch.to(device)
+        wavs = batch["sig"]    # Get waveforms from the batch
+        lengths = [len(wav) for wav in wavs]  # Get lengths of each waveform
+        max_length = max(lengths)  # Find the maximum length in the batch
+        lens = torch.tensor([length / max_length for length in lengths], dtype=torch.float32).to(device)
         ids = batch["id"]    # Get unique IDs from the batch
+        spkids = batch["spk_id_encoded"]
+
+        wavs, lens = augmenter(wavs, lens)
+        features = feats(wavs)
+        spkids = augmenter.replicate_labels(spkids)
+
+        for idx, (mfcc, spkid) in enumerate(zip(features, spkids)):
+            # Save MFCC features
+            mfcc_save_path = os.path.join(mfcc_dir, f"mfcc_batch{batch_num}_idx{idx}.npy")
+            np.save(mfcc_save_path, mfcc.numpy())  # Save MFCC features as .npy file
+
+            # Save encoded speaker ID
+            spkid_save_path = os.path.join(spkid_dir, f"spkid_batch{batch_num}_idx{idx}.npy")
+            np.save(spkid_save_path, spkid.numpy())  # Save speaker ID as .npy file
+    print(f"Saved train MFCCs")
+
+def MFCC_extracter_valid(data, output_dir, device):
+    
+    feats = sb.lobes.features.MFCC(n_mfcc=80, n_mels=100, deltas=False, context=False)
+
+    # Assuming you have defined your dataset
+    train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=4)
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    mfcc_dir = os.path.join(output_dir, 'mfcc')
+    os.makedirs(mfcc_dir, exist_ok=True)
+
+    spkid_dir = os.path.join(output_dir, 'spkid')
+    os.makedirs(spkid_dir, exist_ok=True)
+
+    for batch_num, batch in enumerate(tqdm(train_dataloader, desc="Processing Batches", dynamic_ncols=True)):
+        batch = batch.to(device)
+        wavs = batch["sig"]    # Get waveforms from the batch
+        spkids = batch["spk_id_encoded"]
+
         features = feats(wavs)
 
-        for mfcc, file_id in zip(features, ids):
-            # Save each MFCC file with a unique name
-            save_path = os.path.join(save_folder, f"{file_id}.npy")
-            np.save(save_path, mfcc.numpy())  # Save as .npy file
-    print(f"Saved MFCCs")
+        for idx, (mfcc, spkid) in enumerate(zip(features, spkids)):
+            # Save MFCC features
+            mfcc_save_path = os.path.join(mfcc_dir, f"mfcc_batch{batch_num}_idx{idx}.npy")
+            np.save(mfcc_save_path, mfcc.cpu().numpy()) # Save MFCC features as .npy file
+
+            # Save encoded speaker ID
+            spkid_save_path = os.path.join(spkid_dir, f"spkid_batch{batch_num}_idx{idx}.npy")
+            np.save(spkid_save_path, spkid.cpu().numpy())  # Save speaker ID as .npy file
+    print(f"Saved Valid MFCCs")
