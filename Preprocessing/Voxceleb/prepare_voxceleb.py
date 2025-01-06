@@ -25,7 +25,6 @@ TEST_CSV = "test.csv"
 ENROL_CSV = "enrol.csv"
 SAMPLERATE = 16000
 
-
 DEV_WAV = "vox1_dev_wav.zip"
 TEST_WAV = "vox1_test_wav.zip"
 META = "meta"
@@ -246,7 +245,7 @@ def _get_utt_split_lists(
             audio_files_list = []
             for f in glob.glob(path, recursive=True):
                 try:
-                    spk_id = f.split("/wav/")[1].split("/")[0]
+                    spk_id = os.path.normpath(f).split(os.sep)[-2] 
                 except ValueError:
                     logger.info(f"Malformed path: {f}")
                     continue
@@ -309,7 +308,7 @@ def prepare_csv(seg_dur, wav_lst, csv_file, random_segment=False, amp_th=0):
     for wav_file in tqdm(wav_lst, dynamic_ncols=True):
         # Getting sentence and speaker ids
         try:
-            [spk_id, sess_id, utt_id] = wav_file.split("/")[-3:]
+            [spk_id, sess_id, utt_id] = wav_file.split("\\")[-3:]
         except ValueError:
             logger.info(f"Malformed path: {wav_file}")
             continue
