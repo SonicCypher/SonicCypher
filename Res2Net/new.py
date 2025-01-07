@@ -49,21 +49,21 @@ class MFCCDatasetInMemory(Dataset):
 
 def train_model_in_memory(model, epochs, warmup_steps, device, patience=5, pretrained=False):
     # Extract features and labels in memory
-    mfcc_features, spkid_labels = MFCC_Extraction()
-    # num_classes = len(np.unique(spkid_labels))
+    train_mfccs, train_spkids, valid_mfccs, valid_spkids = MFCC_Extraction()
+    # num_classes = len(np.unique(train_spkids))
 
     # Split data into training and validation sets
-    train_size = int(0.8 * len(mfcc_features))
-    val_size = len(mfcc_features) - train_size
-    train_features, val_features = mfcc_features[:train_size], mfcc_features[train_size:]
-    train_labels, val_labels = spkid_labels[:train_size], spkid_labels[train_size:]
+    # train_size = int(0.8 * len(train_mfccs))
+    # val_size = len(train_mfccs) - train_size
+    # train_features, val_features = train_mfccs[:train_size], train_mfccs[train_size:]
+    # train_labels, val_labels = train_spkids[:train_size], train_spkids[train_size:]
 
     # Create datasets and dataloaders
-    train_dataset = MFCCDatasetInMemory(train_features, train_labels)
-    val_dataset = MFCCDatasetInMemory(val_features, val_labels)
+    train_dataset = MFCCDatasetInMemory(train_mfccs, train_spkids)
+    val_dataset = MFCCDatasetInMemory(valid_mfccs, valid_spkids)
 
-    train_loader = DataLoader(train_dataset, batch_size=5, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=5, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
     if pretrained:
         try:
@@ -137,6 +137,6 @@ def train_model_in_memory(model, epochs, warmup_steps, device, patience=5, pretr
 
 # Example usage:
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = se_res2net50_v1b(num_classes=10)
+model = se_res2net50_v1b(num_classes=1211)
 
 train_model_in_memory(model, epochs=20, warmup_steps=1000, device=device, patience=5, pretrained=False)

@@ -37,7 +37,7 @@ def MFCC_Extraction():
     print(train_mfccs.shape, train_spkids.shape)
     print(valid_mfccs.shape, valid_spkids.shape)
 
-    return train_mfccs, train_spkids
+    return train_mfccs, train_spkids, valid_mfccs, valid_spkids
 
 
 # if __name__ == "__main__":
