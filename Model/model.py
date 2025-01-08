@@ -97,7 +97,7 @@ def MFCC_extracter_train(data, device):
         snr_high=16, 
         noise_sample_rate=16000, 
         clean_sample_rate=16000, 
-        num_workers=0
+        num_workers=4
         )
     
     add_babble = AddNoise(
@@ -106,7 +106,7 @@ def MFCC_extracter_train(data, device):
         snr_high=16, 
         noise_sample_rate=16000, 
         clean_sample_rate=16000, 
-        num_workers=0, 
+        num_workers=4, 
         )
     
     augmenter = Augmenter(
@@ -166,7 +166,7 @@ def MFCC_extracter_valid(data, device):
         feats = sb.lobes.features.MFCC(n_mfcc=80, n_mels=100, deltas=False, context=False)
 
         # Assuming you have defined your dataset
-        # train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=0)
+        train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=0)
 
         # os.makedirs(output_dir, exist_ok=True)
 
