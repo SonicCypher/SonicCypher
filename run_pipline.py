@@ -27,17 +27,17 @@ def MFCC_Extraction():
     # # Step 1: Prepare the data using `dataio_prep`
     train_data, valid_data, label_encoder = dataio_prep(data_folder, save_folder, train_annotation, valid_annotation)
 
-    # Step 2: Use the output of `dataio_prep` as input to `MFCC_extracter`
-    print("Extracting MFCCs for training data...")
-    train_mfccs, train_spkids = MFCC_extracter_train(train_data, save_folder_mfcc_train, device)
-    print("Completed Extracting MFCCs for training data...")
-    print("Extracting MFCCs for valid data...")
-    valid_mfccs, valid_spkids = MFCC_extracter_valid(valid_data, save_folder_mfcc_valid, device)
-    print("Completed Extracting MFCCs for valid data...")
-    print(train_mfccs.shape, train_spkids.shape)
-    print(valid_mfccs.shape, valid_spkids.shape)
+    # # Step 2: Use the output of `dataio_prep` as input to `MFCC_extracter`
+    # print("Extracting MFCCs for training data...")
+    # train_mfccs, train_spkids = MFCC_extracter_train(train_data, save_folder_mfcc_train, device)
+    # print("Completed Extracting MFCCs for training data...")
+    # print("Extracting MFCCs for valid data...")
+    # valid_mfccs, valid_spkids = MFCC_extracter_valid(valid_data, save_folder_mfcc_valid, device)
+    # print("Completed Extracting MFCCs for valid data...")
+    # print(train_mfccs.shape, train_spkids.shape)
+    # print(valid_mfccs.shape, valid_spkids.shape)
 
-    return train_mfccs, train_spkids
+    return train_data, valid_data, label_encoder
 
 
 # if __name__ == "__main__":

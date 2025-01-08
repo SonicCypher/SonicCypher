@@ -1,2 +1,6 @@
 __pycache__/
 *.pth
+Voxceleb/
+Model/output/
+Model/noise/
+
