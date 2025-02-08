@@ -4,3 +4,15 @@ Voxceleb/
 Model/output/
 Model/noise/
 
+.idea/
+
+**/_pycache_/
+
+*.pth
+*.patch
+
+noise/
+noise_csv/
+output/
+Sonic-data/
+voxceleb/

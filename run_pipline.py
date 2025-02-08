@@ -14,6 +14,7 @@ def MFCC_Extraction():
     save_folder_csv = os.path.join("Preprocessing", "Voxceleb", "output")
     splits = ['train', 'dev']
     split_ratio = [90, 10]
+    print("Preparing VoxCeleb data...")
 
     prepare_voxceleb(data_folder,save_folder_csv,splits,split_ratio)
     # # Define paths and parameters
@@ -26,8 +27,10 @@ def MFCC_Extraction():
 
     # # Step 1: Prepare the data using `dataio_prep`
     train_data, valid_data, label_encoder = dataio_prep(data_folder, save_folder, train_annotation, valid_annotation)
-
+    MFCC_extracter_train(train_data, device)
+    MFCC_extracter_valid(valid_data, device)
     # # Step 2: Use the output of `dataio_prep` as input to `MFCC_extracter`
+
     # print("Extracting MFCCs for training data...")
     # train_mfccs, train_spkids = MFCC_extracter_train(train_data, save_folder_mfcc_train, device)
     # print("Completed Extracting MFCCs for training data...")
@@ -37,7 +40,7 @@ def MFCC_Extraction():
     # print(train_mfccs.shape, train_spkids.shape)
     # print(valid_mfccs.shape, valid_spkids.shape)
 
-    return train_data, valid_data, label_encoder
+    # return train_data, valid_data, label_encoder
 
 
 # if __name__ == "__main__":

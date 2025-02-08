@@ -6,6 +6,11 @@ from torch.utils.data import DataLoader, Dataset, random_split
 import numpy as np
 from math import pow
 import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from run_pipline import MFCC_Extraction
 
 class ScheduledOptim(object):
     def __init__(self, optimizer, n_warmup_steps):
@@ -54,9 +59,44 @@ class MFCCDataset(Dataset):
       # Ensure spkid_data is 1D (flatten if necessary)
       spkid_data = np.squeeze(spkid_data)
       return torch.tensor(mfcc_data, dtype=torch.float32), torch.tensor(spkid_data, dtype=torch.long)
+
+    # def __init__(self, mfcc_folder, spkid_folder):
+    #     """
+    #     Instead of preloading file lists, this dynamically loads MFCC and speaker ID files batch-wise.
+    #     """
+    #     self.mfcc_folder = mfcc_folder
+    #     self.spkid_folder = spkid_folder
+    #     self.mfcc_files = sorted([f for f in os.listdir(mfcc_folder) if f.endswith('.npy')])
+    #     self.spkid_files = sorted([f for f in os.listdir(spkid_folder) if f.endswith('.npy')])
+    #     assert len(self.mfcc_files) == len(self.spkid_files), "Mismatch between MFCC and speaker ID files"
+
+    # def __len__(self):
+    #     """
+    #     Return the total number of samples.
+    #     """
+    #     return len(self.mfcc_files)
+
+    # def __iter__(self):
+    #     """
+    #     Generator function to load data batch-wise.
+    #     """
+    #     for mfcc_file, spkid_file in zip(self.mfcc_files, self.spkid_files):
+    #         # Load the individual MFCC and speaker ID files dynamically
+    #         mfcc_data = np.load(os.path.join(self.mfcc_folder, mfcc_file))
+    #         spkid_data = np.load(os.path.join(self.spkid_folder, spkid_file))
+            
+    #         # Add channel dimension
+    #         mfcc_data = np.expand_dims(mfcc_data, axis=0)
+    #         spkid_data = np.squeeze(spkid_data)
+
+    #         yield torch.tensor(mfcc_data, dtype=torch.float32), torch.tensor(spkid_data, dtype=torch.long)
         
 
-def train_model(model, train_loader, val_loader, epochs, warmup_steps, device, patience=5, pretrained=False):
+def train_model(model,train_loader, val_loader, epochs, warmup_steps, device, patience=5, pretrained=False):
+
+    # train_loader = DataLoader(MFCCDataset(train_mfcc_folder, train_spkid_folder), batch_size=5, shuffle=True)
+    # val_loader = DataLoader(MFCCDataset(valid_mfcc_folder, valid_spkid_folder), batch_size=5, shuffle=False)
+
     if pretrained:
         try:
             model.load_state_dict(torch.load("best_model.pth"))
@@ -105,9 +145,10 @@ def train_model(model, train_loader, val_loader, epochs, warmup_steps, device, p
                 inputs, labels = inputs.to(device), labels.to(device)
                 outputs = model(inputs)
                 loss = criterion(outputs, labels)
-
+                print(labels)
                 val_loss += loss.item()
                 _, predicted = outputs.max(1)
+
                 total += labels.size(0)
                 correct += predicted.eq(labels).sum().item()
 
@@ -128,31 +169,43 @@ def train_model(model, train_loader, val_loader, epochs, warmup_steps, device, p
         print("One epoch is done.")
 
 # Paths to the directories containing the MFCC and speaker ID files
-mfcc_folder = "./Model/output/mfcc"
-spkid_folder = "./Model/output/spkid"
+base_dir = r"d:/FYP/SonicCypher/Model/output"
+train_mfcc_folder = os.path.join(base_dir, "train/mfcc")
+train_spkid_folder = os.path.join(base_dir, "train/spkid")
+valid_mfcc_folder = os.path.join(base_dir, "valid/mfcc")
+valid_spkid_folder = os.path.join(base_dir, "valid/spkid")
+
 
 # Load file paths
-mfcc_files = sorted([os.path.join(mfcc_folder, f) for f in os.listdir(mfcc_folder) if f.endswith('.npy')])
-spkid_files = sorted([os.path.join(spkid_folder, f) for f in os.listdir(spkid_folder) if f.endswith('.npy')])
+train_mfcc_files = sorted([os.path.join(train_mfcc_folder, f) for f in os.listdir(train_mfcc_folder) if f.endswith('.npy')])
+train_spkid_files = sorted([os.path.join(train_spkid_folder, f) for f in os.listdir(train_spkid_folder) if f.endswith('.npy')])
+
+val_mfcc_files = sorted([os.path.join(valid_mfcc_folder, f) for f in os.listdir(valid_mfcc_folder) if f.endswith('.npy')])
+val_spkid_files = sorted([os.path.join(valid_spkid_folder, f) for f in os.listdir(valid_spkid_folder) if f.endswith('.npy')])
 
 # Create the dataset
-full_dataset = MFCCDataset(mfcc_files, spkid_files)
+full_train_dataset = MFCCDataset(train_mfcc_files, train_spkid_files)
+full_val_dataset = MFCCDataset(val_mfcc_files, val_spkid_files)
+
 
 # Split into training and validation datasets
-train_size = int(0.8 * len(full_dataset))
-val_size = len(full_dataset) - train_size
-train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
+# train_size = int(0.8 * len(full_train_dataset))
+# val_size = len(full_dataset) - train_size
+# train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
 
 # Create DataLoaders
-train_loader = DataLoader(train_dataset, batch_size=5, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=5, shuffle=False)
+train_loader = DataLoader(full_train_dataset, batch_size=5, shuffle=True)
+val_loader = DataLoader(full_val_dataset, batch_size=5, shuffle=False)
 
 device = torch.device("cpu")
-model = se_res2net50_v1b(num_classes=len(np.unique([np.load(f) for f in spkid_files])))
+model = se_res2net50_v1b(num_classes=2)
 
 epochs = 20
 warmup_steps = 1000
 patience = 5  # Early stopping patience
 pretrained = False  # Load pretrained model if available
 
-train_model(model, train_loader, val_loader, epochs, warmup_steps, device, patience, pretrained)
+MFCC_Extraction()
+
+# train_model(train_mfcc_folder,train_spkid_folder,valid_mfcc_folder,valid_spkid_folder,model, epochs, warmup_steps, device, patience, pretrained)
+train_model(model,train_loader,val_loader, epochs, warmup_steps, device, patience, pretrained)
