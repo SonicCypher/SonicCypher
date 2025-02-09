@@ -10,7 +10,7 @@ def MFCC_Extraction():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    data_folder = "/mnt/additional-volume/voxdata/vox1_dev_wav_10" # TODO: Change this to the actual path
+    data_folder = "/content/drive/MyDrive/FYP - Speaker verification and liveliness detection/Data_wav/vox1_dev_wav_3" # TODO: Change this to the actual path
     save_folder_csv = os.path.join("Preprocessing", "Voxceleb", "output")
     splits = ['train', 'dev']
     split_ratio = [90, 10]

@@ -175,6 +175,11 @@ train_spkid_folder = os.path.join(base_dir, "train/spkid")
 valid_mfcc_folder = os.path.join(base_dir, "valid/mfcc")
 valid_spkid_folder = os.path.join(base_dir, "valid/spkid")
 
+for folder in [train_mfcc_folder, train_spkid_folder, valid_mfcc_folder, valid_spkid_folder]:
+    os.makedirs(folder, exist_ok=True)
+
+print("Folders created successfully!")
+
 
 # Load file paths
 train_mfcc_files = sorted([os.path.join(train_mfcc_folder, f) for f in os.listdir(train_mfcc_folder) if f.endswith('.npy')])
@@ -200,7 +205,7 @@ val_loader = DataLoader(full_val_dataset, batch_size=5, shuffle=False)
 device = torch.device("cpu")
 model = se_res2net50_v1b(num_classes=10)
 
-epochs = 1
+epochs = 5
 warmup_steps = 1000
 patience = 5  # Early stopping patience
 pretrained = False  # Load pretrained model if available
