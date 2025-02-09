@@ -1,18 +1,8 @@
-
+import tensorflow as tf
+from modules import bn, gru
 # reference_encoder.py
 def reference_encoder(inputs, is_training=True, scope="encoder", reuse=None):
-    '''
-    Args:
-      inputs: A 3d tensor with shape of (N, Ty, n_mels), with dtype of float32.
-                Melspectrogram of reference audio.
-      is_training: Whether or not the layer is in training mode.
-      scope: Optional scope for `variable_scope`
-      reuse: Boolean, whether to reuse the weights of a previous layer
-        by the same name.
-
-    Returns:
-      Prosody vectors. Has the shape of (N, 128).
-    '''
+    
     with tf.variable_scope(scope, reuse=reuse):
         # 6-Layer Strided Conv2D -> (N, T/64, n_mels/64, 128)
         tensor = tf.layers.conv2d(inputs=inputs, filters=32, kernel_size=3, strides=2, padding='SAME')

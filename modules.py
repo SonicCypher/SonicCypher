@@ -1,31 +1,11 @@
+import tensorflow as tf
 
-# modules.py
 def bn(inputs,
        is_training=True,
        activation_fn=None,
        scope="bn",
        reuse=None):
-    '''Applies batch normalization.
-
-    Args:
-      inputs: A tensor with 2 or more dimensions, where the first dimension has
-        `batch_size`. If type is `bn`, the normalization is over all but
-        the last dimension. Or if type is `ln`, the normalization is over
-        the last dimension. Note that this is different from the native
-        `tf.contrib.layers.batch_norm`. For this I recommend you change
-        a line in ``tensorflow/contrib/layers/python/layers/layer.py`
-        as follows.
-        Before: mean, variance = nn.moments(inputs, axis, keep_dims=True)
-        After: mean, variance = nn.moments(inputs, [-1], keep_dims=True)
-      is_training: Whether or not the layer is in training mode.
-      activation_fn: Activation function.
-      scope: Optional scope for `variable_scope`.
-      reuse: Boolean, whether to reuse the weights of a previous layer
-        by the same name.
-
-    Returns:
-      A tensor with the same shape and data dtype as `inputs`.
-    '''
+    
     inputs_shape = inputs.get_shape()
     inputs_rank = inputs_shape.ndims
 
@@ -66,21 +46,7 @@ def bn(inputs,
     return outputs
 
 def gru(inputs, num_units=None, bidirection=False, scope="gru", reuse=None):
-    '''Applies a GRU.
-    
-    Args:
-      inputs: A 3d tensor with shape of [N, T, C].
-      num_units: An int. The number of hidden units.
-      bidirection: A boolean. If True, bidirectional results 
-        are concatenated.
-      scope: Optional scope for `variable_scope`.  
-      reuse: Boolean, whether to reuse the weights of a previous layer
-        by the same name.
-        
-    Returns:
-      If bidirection is True, a 3d tensor with shape of [N, T, 2*num_units],
-        otherwise [N, T, num_units].
-    '''
+
     with tf.variable_scope(scope, reuse=reuse):
         if num_units is None:
             num_units = inputs.get_shape().as_list()[-1]
