@@ -10,7 +10,7 @@ def MFCC_Extraction():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    data_folder = os.path.join( "Voxceleb")
+    data_folder = "/mnt/additional-volume/voxdata/vox1_dev_wav_10" # TODO: Change this to the actual path
     save_folder_csv = os.path.join("Preprocessing", "Voxceleb", "output")
     splits = ['train', 'dev']
     split_ratio = [90, 10]
@@ -18,12 +18,12 @@ def MFCC_Extraction():
 
     prepare_voxceleb(data_folder,save_folder_csv,splits,split_ratio)
     # # Define paths and parameters
-    save_folder = r"Model\output"  # Path to save processed data
-    save_folder_mfcc_train = r"Model\output\train"  # Path to save processed data
-    save_folder_mfcc_valid = r"Model\output\valid"  # Path to save processed data
+    save_folder = "Model/output"  # Path to save processed data
+    # save_folder_mfcc_train = r"Model\output\train"  # Path to save processed data
+    # save_folder_mfcc_valid = r"Model\output\valid"  # Path to save processed data
 
-    train_annotation = r"Preprocessing\Voxceleb\output\train.csv"  # Training annotations CSV
-    valid_annotation = r"Preprocessing\Voxceleb\output\dev.csv"  # Validation annotations CSV
+    train_annotation = "Preprocessing/Voxceleb/output/train.csv"  # Training annotations CSV
+    valid_annotation = "Preprocessing/Voxceleb/output/dev.csv"  # Validation annotations CSV
 
     # # Step 1: Prepare the data using `dataio_prep`
     train_data, valid_data, label_encoder = dataio_prep(data_folder, save_folder, train_annotation, valid_annotation)

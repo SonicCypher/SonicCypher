@@ -308,7 +308,7 @@ def prepare_csv(seg_dur, wav_lst, csv_file, random_segment=False, amp_th=0):
     for wav_file in tqdm(wav_lst, dynamic_ncols=True):
         # Getting sentence and speaker ids
         try:
-            [spk_id, sess_id, utt_id] = wav_file.split("\\")[-3:]
+            [spk_id, sess_id, utt_id] = wav_file.split("/")[-3:]
         except ValueError:
             logger.info(f"Malformed path: {wav_file}")
             continue

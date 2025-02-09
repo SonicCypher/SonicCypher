@@ -79,14 +79,14 @@ def dataio_prep(data_folder, save_folder, train_annotation, valid_annotation):
 
 def MFCC_extracter_train(data, device):
 
-    noise_folder = r"Model\noise\free-sound"
-    speech_folder = r"Model\noise\librivox"
+    noise_folder = "Model/noise/free-sound"
+    speech_folder = "Model/noise/librivox"
 
     noise_filelist = get_all_files(noise_folder, match_and=['.wav'])
     speech_filelist = get_all_files(speech_folder, match_and=['.wav'])
 
-    noise_csv = r"Model\noise_csv\noise.csv"
-    speech_csv = r"Model\noise_csv\speech.csv"
+    noise_csv = "Model/noise_csv/noise.csv"
+    speech_csv = "Model/noise_csv/speech.csv"
 
     prepare_csv(noise_filelist, noise_csv)
     prepare_csv(speech_filelist, speech_csv)
@@ -122,7 +122,7 @@ def MFCC_extracter_train(data, device):
 
     #Assuming you have defined your dataset
     train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=0)
-    output_dir = r"Model\output\train"
+    output_dir = "Model/output/train"
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -168,7 +168,7 @@ def MFCC_extracter_valid(data, device):
 
         # Assuming you have defined your dataset
         train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=0)
-        output_dir = r"Model\output\valid"
+        output_dir = "Model/output/valid"
 
         os.makedirs(output_dir, exist_ok=True)
 
