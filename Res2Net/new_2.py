@@ -169,6 +169,10 @@ def train_model_in_memory(model, epochs, warmup_steps, device, patience=5, pretr
         if no_improve_epochs >= patience:
             print("Early stopping triggered.")
             break
+        # Create the directory if it doesn't exist
+        checkpoint_dir = "epoch_checkpoints"
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        torch.save(model.state_dict(), os.path.join(checkpoint_dir, f"model_epoch{epoch}.pth"))
         print("One epoch is done.")
 
 # Example usage:

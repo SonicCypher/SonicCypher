@@ -79,50 +79,50 @@ def dataio_prep(data_folder, save_folder, train_annotation, valid_annotation):
 
 def MFCC_extracter_train(data, device):
 
-    noise_folder = r"Model\noise\free-sound"
-    speech_folder = r"Model\noise\librivox"
+    # noise_folder = r"Model\noise\free-sound"
+    # speech_folder = r"Model\noise\librivox"
 
-    noise_filelist = get_all_files(noise_folder, match_and=['.wav'])
-    speech_filelist = get_all_files(speech_folder, match_and=['.wav'])
+    # noise_filelist = get_all_files(noise_folder, match_and=['.wav'])
+    # speech_filelist = get_all_files(speech_folder, match_and=['.wav'])
 
-    noise_csv = r"Model\noise_csv\noise.csv"
-    speech_csv = r"Model\noise_csv\speech.csv"
+    # noise_csv = r"Model\noise_csv\noise.csv"
+    # speech_csv = r"Model\noise_csv\speech.csv"
 
-    prepare_csv(noise_filelist, noise_csv)
-    prepare_csv(speech_filelist, speech_csv)
+    # prepare_csv(noise_filelist, noise_csv)
+    # prepare_csv(speech_filelist, speech_csv)
 
-    add_noise = AddNoise(
-        csv_file = noise_csv, 
-        snr_low=0, 
-        snr_high=16, 
-        noise_sample_rate=16000, 
-        clean_sample_rate=16000, 
-        num_workers=4
-        )
+    # add_noise = AddNoise(
+    #     csv_file = noise_csv, 
+    #     snr_low=0, 
+    #     snr_high=16, 
+    #     noise_sample_rate=16000, 
+    #     clean_sample_rate=16000, 
+    #     num_workers=4
+    #     )
     
-    add_babble = AddNoise(
-        csv_file = speech_csv, 
-        snr_low=0, 
-        snr_high=16, 
-        noise_sample_rate=16000, 
-        clean_sample_rate=16000, 
-        num_workers=4, 
-        )
+    # add_babble = AddNoise(
+    #     csv_file = speech_csv, 
+    #     snr_low=0, 
+    #     snr_high=16, 
+    #     noise_sample_rate=16000, 
+    #     clean_sample_rate=16000, 
+    #     num_workers=4, 
+    #     )
     
-    augmenter = Augmenter(
-        parallel_augment= True,
-        concat_original= True,
-        min_augmentations= 2,
-        max_augmentations= 2,
-        augment_prob=1.0,
-        augmentations=[add_noise, add_babble],
-    )
+    # augmenter = Augmenter(
+    #     parallel_augment= True,
+    #     concat_original= True,
+    #     min_augmentations= 2,
+    #     max_augmentations= 2,
+    #     augment_prob=1.0,
+    #     augmentations=[add_noise, add_babble],
+    # )
 
     feats = sb.lobes.features.MFCC(n_mfcc=80, n_mels=100, deltas=False, context=False)
 
     #Assuming you have defined your dataset
     train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=0)
-    output_dir = r"Model\output\train"
+    output_dir = r"Model/output/train"
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -168,7 +168,7 @@ def MFCC_extracter_valid(data, device):
 
         # Assuming you have defined your dataset
         train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=0)
-        output_dir = r"Model\output\valid"
+        output_dir = r"Model/output/valid"
 
         os.makedirs(output_dir, exist_ok=True)
 

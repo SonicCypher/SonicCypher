@@ -168,8 +168,11 @@ def train_model(model,train_loader, val_loader, epochs, warmup_steps, device, pa
             break
         print("One epoch is done.")
 
+MFCC_Extraction()
+
+
 # Paths to the directories containing the MFCC and speaker ID files
-base_dir = r"d:/FYP/SonicCypher/Model/output"
+base_dir = r"./Model/output"
 train_mfcc_folder = os.path.join(base_dir, "train/mfcc")
 train_spkid_folder = os.path.join(base_dir, "train/spkid")
 valid_mfcc_folder = os.path.join(base_dir, "valid/mfcc")
@@ -198,14 +201,13 @@ train_loader = DataLoader(full_train_dataset, batch_size=5, shuffle=True)
 val_loader = DataLoader(full_val_dataset, batch_size=5, shuffle=False)
 
 device = torch.device("cpu")
-model = se_res2net50_v1b(num_classes=2)
+model = se_res2net50_v1b(num_classes=3)
 
 epochs = 20
 warmup_steps = 1000
 patience = 5  # Early stopping patience
 pretrained = False  # Load pretrained model if available
 
-MFCC_Extraction()
 
 # train_model(train_mfcc_folder,train_spkid_folder,valid_mfcc_folder,valid_spkid_folder,model, epochs, warmup_steps, device, patience, pretrained)
 train_model(model,train_loader,val_loader, epochs, warmup_steps, device, patience, pretrained)
