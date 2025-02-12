@@ -110,8 +110,8 @@ def MFCC_extracter_train(data, device):
         )
     
     augmenter = Augmenter(
-        parallel_augment= True,
-        concat_original= True,
+        parallel_augment= False,
+        concat_original= False,
         min_augmentations= 2,
         max_augmentations= 2,
         augment_prob=1.0,
@@ -123,7 +123,6 @@ def MFCC_extracter_train(data, device):
     #Assuming you have defined your dataset
     train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=0)
     output_dir = r"Model\output\train"
-
     os.makedirs(output_dir, exist_ok=True)
 
     mfcc_dir = os.path.join(output_dir, 'mfcc')
@@ -131,6 +130,14 @@ def MFCC_extracter_train(data, device):
 
     spkid_dir = os.path.join(output_dir, 'spkid')
     os.makedirs(spkid_dir, exist_ok=True)
+
+    augmented_mfcc_dir = os.path.join(output_dir, 'augmented','mfcc')
+    os.makedirs(augmented_mfcc_dir, exist_ok=True)
+
+    augmented_spkid_dir = os.path.join(output_dir, 'augmented','spkid')
+    os.makedirs(augmented_spkid_dir, exist_ok=True)
+
+
 
     # mfcc_features = []
     # spkid_labels = []
@@ -152,14 +159,24 @@ def MFCC_extracter_train(data, device):
 
     # return np.array(features), np.array(spkids)
 
+        # for idx, (mfcc, spkid) in enumerate(zip(features, spkids)):
+        #     # Save MFCC features
+        #     mfcc_save_path = os.path.join(mfcc_dir, f"mfcc_batch{batch_num}_idx{idx}.npy")
+        #     np.save(mfcc_save_path, mfcc.numpy())  # Save MFCC features as .npy file
+
+        #     # Save encoded speaker ID
+        #     spkid_save_path = os.path.join(spkid_dir, f"spkid_batch{batch_num}_idx{idx}.npy")
+        #     np.save(spkid_save_path, spkid.numpy())  # Save speaker ID as .npy file
+
         for idx, (mfcc, spkid) in enumerate(zip(features, spkids)):
             # Save MFCC features
-            mfcc_save_path = os.path.join(mfcc_dir, f"mfcc_batch{batch_num}_idx{idx}.npy")
-            np.save(mfcc_save_path, mfcc.numpy())  # Save MFCC features as .npy file
+            mfcc_save_path = os.path.join(augmented_mfcc_dir, f"mfcc_batch{batch_num}_idx{idx}.npy")
+            np.save(mfcc_save_path, mfcc.numpy())
 
             # Save encoded speaker ID
-            spkid_save_path = os.path.join(spkid_dir, f"spkid_batch{batch_num}_idx{idx}.npy")
-            np.save(spkid_save_path, spkid.numpy())  # Save speaker ID as .npy file
+            spkid_save_path = os.path.join(augmented_spkid_dir, f"spkid_batch{batch_num}_idx{idx}.npy")
+            np.save(spkid_save_path, spkid.numpy())
+
     print(f"Saved train MFCCs")
 
 def MFCC_extracter_valid(data, device):

@@ -175,6 +175,12 @@ train_spkid_folder = os.path.join(base_dir, "train/spkid")
 valid_mfcc_folder = os.path.join(base_dir, "valid/mfcc")
 valid_spkid_folder = os.path.join(base_dir, "valid/spkid")
 
+# Ensure the directories exist
+os.makedirs(train_mfcc_folder, exist_ok=True)
+os.makedirs(train_spkid_folder, exist_ok=True)
+os.makedirs(valid_mfcc_folder, exist_ok=True)
+os.makedirs(valid_spkid_folder, exist_ok=True)
+
 
 # Load file paths
 train_mfcc_files = sorted([os.path.join(train_mfcc_folder, f) for f in os.listdir(train_mfcc_folder) if f.endswith('.npy')])
