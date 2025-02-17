@@ -46,7 +46,6 @@ def bn(inputs,
     return outputs
 
 def gru(inputs, num_units=None, bidirection=False, scope="gru", reuse=None):
-
     with tf.variable_scope(scope, reuse=reuse):
         if num_units is None:
             num_units = inputs.get_shape().as_list()[-1]
