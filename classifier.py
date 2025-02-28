@@ -6,10 +6,7 @@ import numpy as np
 
 # Load precomputed Mel-spectrogram features and labels
 def load_data(file_path):
-    """
-    Load precomputed Mel-spectrogram features and labels from a file.
-    Assumes the file contains a dictionary with keys: 'features' and 'labels'.
-    """
+    
     data = np.load(file_path, allow_pickle=True)
     features = torch.tensor(data['features'], dtype=torch.float32)
     labels = torch.tensor(data['labels'], dtype=torch.float32)
