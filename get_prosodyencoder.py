@@ -281,6 +281,34 @@ def process_and_generate_prosody(input_mel_dir, output_prosody_dir):
         print(f"Loading model from {CHECKPOINT_PATH}...")
         print("Model loaded successfully!")
 
+        # for file_name in os.listdir(input_mel_dir):
+        #     print(f"file_name: {file_name}")
+        #     if file_name.endswith("_mel.npy"):
+        #         print(f"Processing {file_name}...")
+
+        #         try:
+        #             mel_path = os.path.join(input_mel_dir, file_name)
+        #             mel = np.load(mel_path)  # Load mel spectrogram
+
+        #             # Reshape mel spectrogram to match input shape (N, T, 80, C)
+        #             mel_4d = mel.reshape(1, mel.shape[0], mel.shape[1], 1)
+        #             print(f"mel_4d shape: {mel_4d.shape}")
+
+        #             audio_name = file_name.replace("_mel.npy", "")
+        #             print(f"Processing {audio_name}...")
+
+        #             # Run session to get prosody embedding
+        #             prosody_embedding_np = sess.run(prosody_embedding, feed_dict={mel_input: mel_4d})
+
+        #             # Save prosody embedding
+        #             prosody_path = os.path.join(output_prosody_dir, file_name.replace("_mel.npy", "_prosody.npy"))
+        #             np.save(prosody_path, prosody_embedding_np)
+
+        #             processed_files.append(file_name)
+        #             print(f"Finished processing {file_name}, prosody saved at {prosody_path}.")
+        #         except Exception as e:
+        #             failed_files.append(file_name)
+        #             print(f"Error processing {file_name}: {e}")
         for file_name in os.listdir(input_mel_dir):
             print(f"file_name: {file_name}")
             if file_name.endswith("_mel.npy"):
@@ -289,6 +317,12 @@ def process_and_generate_prosody(input_mel_dir, output_prosody_dir):
                 try:
                     mel_path = os.path.join(input_mel_dir, file_name)
                     mel = np.load(mel_path)  # Load mel spectrogram
+
+                    # Ensure mel has 80 mel bins
+                    if mel.shape[1] < 80:
+                        mel = np.pad(mel, ((0, 0), (0, 80 - mel.shape[1])), mode='constant')
+                    elif mel.shape[1] > 80:
+                        mel = mel[:, :80]
 
                     # Reshape mel spectrogram to match input shape (N, T, 80, C)
                     mel_4d = mel.reshape(1, mel.shape[0], mel.shape[1], 1)
@@ -309,6 +343,7 @@ def process_and_generate_prosody(input_mel_dir, output_prosody_dir):
                 except Exception as e:
                     failed_files.append(file_name)
                     print(f"Error processing {file_name}: {e}")
+
 
     # Summary
     print("\n--- Processing Summary ---")
