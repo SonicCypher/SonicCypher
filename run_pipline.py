@@ -10,13 +10,14 @@ def MFCC_Extraction():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    data_folder = "/content/drive/MyDrive/Voxceleb"
-    save_folder_csv = os.path.join("Preprocessing", "Voxceleb", "output")
-    splits = ['train', 'dev']
+    data_folder = "/mnt/additional-volume/voxdata/vox1_dev_wav"
+    save_folder_csv = "./Preprocessing/Voxceleb/output"
+    splits = ['train', 'dev','test']
     split_ratio = [90, 10]
+    verification_pairs_file = r"/mnt/additional-volume/voxdata/vox1_dev_wav/veri_test.txt"
     print("Preparing VoxCeleb data...")
 
-    prepare_voxceleb(data_folder,save_folder_csv,splits,split_ratio)
+    prepare_voxceleb(data_folder,save_folder_csv, verification_pairs_file,splits,split_ratio)
     # # Define paths and parameters
     save_folder = r"Model/output"  # Path to save processed data
     save_folder_mfcc_train = r"Model/output/train"  # Path to save processed data
@@ -29,10 +30,19 @@ def MFCC_Extraction():
     train_annotation = "Preprocessing/Voxceleb/output/train.csv"  # Training annotations CSV
     valid_annotation = "Preprocessing/Voxceleb/output/dev.csv"  # Validation annotations CSV
 
+    if not os.listdir(save_folder_mfcc_train) or not os.listdir(save_folder_mfcc_valid):
+        print("Extracting MFCCs...")
+        train_data, valid_data, label_encoder = dataio_prep(data_folder, save_folder, train_annotation, valid_annotation)
+        MFCC_extracter_train(train_data, device)
+        MFCC_extracter_valid(valid_data, device)
+        print("MFCC extraction completed.")
+    else:
+        print("MFCC extraction skipped (already exists).")
+    
     # # Step 1: Prepare the data using `dataio_prep`
-    train_data, valid_data, label_encoder = dataio_prep(data_folder, save_folder, train_annotation, valid_annotation)
-    MFCC_extracter_train(train_data, device)
-    MFCC_extracter_valid(valid_data, device)
+    # train_data, valid_data, label_encoder = dataio_prep(data_folder, save_folder, train_annotation, valid_annotation)
+    # MFCC_extracter_train(train_data, device)
+    # MFCC_extracter_valid(valid_data, device)
     # # Step 2: Use the output of `dataio_prep` as input to `MFCC_extracter`
 
     # print("Extracting MFCCs for training data...")

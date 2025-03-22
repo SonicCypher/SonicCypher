@@ -93,7 +93,7 @@ class Res2Net(nn.Module):
                                    nn.Conv2d(16, 16, 3, 1, 1, bias=False))
         self.bn1 = nn.BatchNorm2d(16)
         self.relu = nn.ReLU()
-        # self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 16, layers[0])#64
         self.layer2 = self._make_layer(block, 32, layers[1], stride=2)#128
         self.layer3 = self._make_layer(block, 64, layers[2], stride=2)#256
@@ -156,7 +156,7 @@ class Res2Net(nn.Module):
         # print('conv1: ', x.size())
         x = self.bn1(x)
         x = self.relu(x)
-        # x = self.maxpool(x)
+        x = self.maxpool(x)
         # print('maxpool: ', x.size())
 
         x = self.layer1(x)
@@ -183,6 +183,7 @@ class Res2Net(nn.Module):
         # print('conv1: ', x.size())
         x = self.bn1(x)
         x = self.relu(x)
+        x = self.maxpool(x)
 
         x = self.layer1(x)
         # print('layer1: ', x.size())

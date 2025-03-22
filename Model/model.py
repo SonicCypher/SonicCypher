@@ -79,49 +79,49 @@ def dataio_prep(data_folder, save_folder, train_annotation, valid_annotation):
 
 def MFCC_extracter_train(data, device):
 
-    # noise_folder = r"Model\noise\free-sound"
-    # speech_folder = r"Model\noise\librivox"
+    noise_folder = r"Model/noise/free-sound"
+    speech_folder = r"Model/noise/librivox"
 
-    # noise_filelist = get_all_files(noise_folder, match_and=['.wav'])
-    # speech_filelist = get_all_files(speech_folder, match_and=['.wav'])
+    noise_filelist = get_all_files(noise_folder, match_and=['.wav'])
+    speech_filelist = get_all_files(speech_folder, match_and=['.wav'])
 
-    # noise_csv = r"Model\noise_csv\noise.csv"
-    # speech_csv = r"Model\noise_csv\speech.csv"
+    noise_csv = r"Model/noise_csv/noise.csv"
+    speech_csv = r"Model/noise_csv/speech.csv"
 
-    # prepare_csv(noise_filelist, noise_csv)
-    # prepare_csv(speech_filelist, speech_csv)
+    prepare_csv(noise_filelist, noise_csv)
+    prepare_csv(speech_filelist, speech_csv)
 
-    # add_noise = AddNoise(
-    #     csv_file = noise_csv, 
-    #     snr_low=0, 
-    #     snr_high=16, 
-    #     noise_sample_rate=16000, 
-    #     clean_sample_rate=16000, 
-    #     num_workers=4
-    #     )
+    add_noise = AddNoise(
+        csv_file = noise_csv, 
+        snr_low=0, 
+        snr_high=16, 
+        noise_sample_rate=16000, 
+        clean_sample_rate=16000, 
+        num_workers=4
+        )
     
-    # add_babble = AddNoise(
-    #     csv_file = speech_csv, 
-    #     snr_low=0, 
-    #     snr_high=16, 
-    #     noise_sample_rate=16000, 
-    #     clean_sample_rate=16000, 
-    #     num_workers=4, 
-    #     )
+    add_babble = AddNoise(
+        csv_file = speech_csv, 
+        snr_low=0, 
+        snr_high=16, 
+        noise_sample_rate=16000, 
+        clean_sample_rate=16000, 
+        num_workers=4, 
+        )
     
-    # augmenter = Augmenter(
-    #     parallel_augment= True,
-    #     concat_original= True,
-    #     min_augmentations= 2,
-    #     max_augmentations= 2,
-    #     augment_prob=1.0,
-    #     augmentations=[add_noise, add_babble],
-    # )
+    augmenter = Augmenter(
+        parallel_augment= True,
+        concat_original= True,
+        min_augmentations= 2,
+        max_augmentations= 2,
+        augment_prob=1.0,
+        augmentations=[add_noise, add_babble],
+    )
 
     feats = sb.lobes.features.MFCC(n_mfcc=80, n_mels=100, deltas=False, context=False)
 
     #Assuming you have defined your dataset
-    train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=0)
+    train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=0, pin_memory=True)
     output_dir = r"Model/output/train"
 
     os.makedirs(output_dir, exist_ok=True)
@@ -132,19 +132,25 @@ def MFCC_extracter_train(data, device):
     spkid_dir = os.path.join(output_dir, 'spkid')
     os.makedirs(spkid_dir, exist_ok=True)
 
+    augmented_mfcc_dir = os.path.join(output_dir, 'augmented', 'mfcc')
+    os.makedirs(augmented_mfcc_dir, exist_ok=True)
+
+    augmented_spkid_dir = os.path.join(output_dir, 'augmented', 'spkid')
+    os.makedirs(augmented_spkid_dir, exist_ok=True)
+
     # mfcc_features = []
     # spkid_labels = []
     for batch_num, batch in enumerate(tqdm(train_dataloader, desc="Processing Batches", dynamic_ncols=True)):
-        wavs = batch["sig"]    # Get waveforms from the batch
-        # lengths = [len(wav) for wav in wavs]  # Get lengths of each waveform
-        # max_length = max(lengths)  # Find the maximum length in the batch
-        # lens = torch.tensor([length / max_length for length in lengths], dtype=torch.float32).to(device)
+        wavs = batch["sig"]  # Get waveforms from the batch
+        lengths = [len(wav) for wav in wavs]  # Get lengths of each waveform
+        max_length = max(lengths)  # Find the maximum length in the batch
+        lens = torch.tensor([length / max_length for length in lengths], dtype=torch.float32)
         # ids = data["id"]    # Get unique IDs from the batch
         spkids = batch["spk_id_encoded"]
 
-        # wavs, lens = augmenter(wavs, lens)
+        wavs, lens = augmenter(wavs, lens)
         features = feats(wavs)
-        # spkids = augmenter.replicate_labels(spkids)
+        spkids = augmenter.replicate_labels(spkids)
 
     # # Append to in-memory lists
     # mfcc_features.extend(features.cpu().numpy())
@@ -152,22 +158,33 @@ def MFCC_extracter_train(data, device):
 
     # return np.array(features), np.array(spkids)
 
+        # for idx, (mfcc, spkid) in enumerate(zip(features, spkids)):
+        #     # Save MFCC features
+        #     mfcc_save_path = os.path.join(mfcc_dir, f"mfcc_batch{batch_num}_idx{idx}.npy")
+        #     np.save(mfcc_save_path, mfcc.numpy())  # Save MFCC features as .npy file
+
+        #     # Save encoded speaker ID
+        #     spkid_save_path = os.path.join(spkid_dir, f"spkid_batch{batch_num}_idx{idx}.npy")
+        #     np.save(spkid_save_path, spkid.numpy())  # Save speaker ID as .npy file
+    
         for idx, (mfcc, spkid) in enumerate(zip(features, spkids)):
             # Save MFCC features
-            mfcc_save_path = os.path.join(mfcc_dir, f"mfcc_batch{batch_num}_idx{idx}.npy")
-            np.save(mfcc_save_path, mfcc.numpy())  # Save MFCC features as .npy file
+            mfcc_save_path = os.path.join(augmented_mfcc_dir, f"mfcc_batch{batch_num}_idx{idx}.npy")
+            np.save(mfcc_save_path, mfcc.numpy())
 
             # Save encoded speaker ID
-            spkid_save_path = os.path.join(spkid_dir, f"spkid_batch{batch_num}_idx{idx}.npy")
-            np.save(spkid_save_path, spkid.numpy())  # Save speaker ID as .npy file
+            spkid_save_path = os.path.join(augmented_spkid_dir, f"spkid_batch{batch_num}_idx{idx}.npy")
+            np.save(spkid_save_path, spkid.numpy())
+
     print(f"Saved train MFCCs")
+
 
 def MFCC_extracter_valid(data, device):
         
         feats = sb.lobes.features.MFCC(n_mfcc=80, n_mels=100, deltas=False, context=False)
 
         # Assuming you have defined your dataset
-        train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=0)
+        train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=0, pin_memory=True)
         output_dir = r"Model/output/valid"
 
         os.makedirs(output_dir, exist_ok=True)
