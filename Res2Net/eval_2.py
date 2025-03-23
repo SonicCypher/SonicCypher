@@ -317,7 +317,9 @@ if __name__ == "__main__":
     train_dataloader, enrol_dataloader, test_dataloader = dataio_prep()
 
     model = se_res2net50_v1b(num_classes=1211)
-    model.load_state_dict(torch.load("best_model.pth", map_location=run_opts["device"]))
+    # model.load_state_dict(torch.load("best_model.pth", map_location=run_opts["device"]))
+    last_best_model = torch.load("best_model.pth", map_location=run_opts["device"])
+    model.load_state_dict(last_best_model["model_state_dict"])
     model.eval()
 
     enrol_dict = compute_embedding_loop(enrol_dataloader)

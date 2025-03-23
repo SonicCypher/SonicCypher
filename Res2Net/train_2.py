@@ -185,7 +185,7 @@ device = torch.device("cuda")
 model = se_res2net50_v1b(num_classes=1211)
 
 epochs = 100
-patience = 5  
+patience = 12 
 pretrained = True
 
 train_model(model,train_loader,val_loader, epochs, device, patience, pretrained)
