@@ -66,10 +66,8 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
             val_loss = checkpoint['val_loss']
             best_val_accuracy = checkpoint['best_val_accuracy']
             start_epoch = checkpoint.get('epoch', 1)
-            no_improve_epochs = checkpoint.get('no_improve_epochs', 0)
             print(f"Resuming training from epoch {start_epoch} with val_loss: {val_loss:.4f}",
-              f"best_val_accuracy: {best_val_accuracy:.2f}%",
-              f"no_improve_epochs: {no_improve_epochs}")
+              f"best_val_accuracy: {best_val_accuracy:.2f}%" )
         else:
             print("No pretrained model found, training from scratch.")
             start_epoch = 1 
@@ -106,8 +104,8 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
 
 
         train_accuracy = 100.0 * correct / total
-        print(f"Epoch {epoch+1}/{epochs}, Learning Rate: {current_lr:.6f}")
-        print(f"Epoch {epoch+1}/{epochs}, Training Loss: {train_loss/len(train_loader):.4f}, Training Accuracy: {train_accuracy:.2f}%")
+        print(f"Epoch {epoch}/{epochs}, Learning Rate: {current_lr:.6f}")
+        print(f"Epoch {epoch}/{epochs}, Training Loss: {train_loss/len(train_loader):.4f}, Training Accuracy: {train_accuracy:.2f}%")
 
         # Validation phase
         model.eval()
@@ -130,11 +128,11 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
         print(f"Validation Loss: {val_loss/len(val_loader):.4f}, Validation Accuracy: {val_accuracy:.2f}%")
 
         # Log metrics to TensorBoard
-        writer.add_scalar('Learning Rate', current_lr, epoch+1)
-        writer.add_scalar('Training Loss', train_loss/len(train_loader), epoch+1)
-        writer.add_scalar('Training Accuracy', train_accuracy, epoch+1)
-        writer.add_scalar('Validation Loss', val_loss/len(val_loader), epoch+1)
-        writer.add_scalar('Validation Accuracy', val_accuracy, epoch+1)
+        writer.add_scalar('Learning Rate', current_lr, epoch)
+        writer.add_scalar('Training Loss', train_loss/len(train_loader), epoch)
+        writer.add_scalar('Training Accuracy', train_accuracy, epoch)
+        writer.add_scalar('Validation Loss', val_loss/len(val_loader), epoch)
+        writer.add_scalar('Validation Accuracy', val_accuracy, epoch)
 
         # Early stopping
         if val_accuracy > best_val_accuracy:
@@ -143,15 +141,14 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
             
             # Save the model checkpoint
             checkpoint ={
-                'epoch': epoch + 1,
+                'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'scheduler_state_dict': scheduler.state_dict(),
                 'val_loss': val_loss/len(val_loader),
                 'best_val_accuracy': best_val_accuracy,
-                'no_improve_epochs': no_improve_epochs
             }
-            save_path = os.path.join(checkpoint_dir, f"model_epoch_{epoch+1}.pth")
+            save_path = os.path.join(checkpoint_dir, f"model_epoch_{epoch}.pth")
             torch.save(checkpoint, save_path)
             print(f"Model saved at {save_path} with validation accuracy: {best_val_accuracy:.2f}%")
 
@@ -161,7 +158,7 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
         if no_improve_epochs >= patience:
             print("Early stopping triggered.")
             break
-        print(f"{epoch+1} epochs is done.")
+        print(f"{epoch} epochs is done.")
 
         writer.close()
 
