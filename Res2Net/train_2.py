@@ -2,7 +2,7 @@ from models.resnet_models import se_res2net50_v1b
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, Dataset, random_split
+from torch.utils.data import DataLoader, Dataset
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import numpy as np
 from math import pow
@@ -43,7 +43,7 @@ class MFCCDataset(Dataset):
       return torch.tensor(mfcc_data, dtype=torch.float32), torch.tensor(spkid_data, dtype=torch.long)
 
 
-def train_model(model,train_loader, val_loader, epochs, device, patience=5, pretrained=False):
+def train_model(model,train_loader, val_loader, epochs, device, patience=12, pretrained=False):
 
     writer = SummaryWriter(log_dir='runs/speaker_verification') 
 
@@ -63,23 +63,30 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=5, pret
             model.load_state_dict(checkpoint['model_state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-            loss = checkpoint['loss']
+            val_loss = checkpoint['val_loss']
             best_val_accuracy = checkpoint['best_val_accuracy']
-            print(f"loss: {loss:.4f}, best_val_accuracy: {best_val_accuracy:.2f}%")
+            start_epoch = checkpoint.get('epoch', 1)
+            no_improve_epochs = checkpoint.get('no_improve_epochs', 0)
+            print(f"Resuming training from epoch {start_epoch} with val_loss: {val_loss:.4f}",
+              f"best_val_accuracy: {best_val_accuracy:.2f}%",
+              f"no_improve_epochs: {no_improve_epochs}")
         else:
             print("No pretrained model found, training from scratch.")
-
+            start_epoch = 1 
+    else:
+        print("Training from scratch.")
+        start_epoch = 1
 
     model.to(device)
     criterion = nn.CrossEntropyLoss()
 
-    for epoch in range(epochs):
+    for epoch in range(start_epoch,epochs+1):
         # Training phase
         model.train()
         train_loss = 0.0
         correct = 0
         total = 0
-        progress_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}", leave=False)
+        progress_bar = tqdm(train_loader, desc=f"Epoch {epoch}/{epochs}", leave=False)
         
         for inputs, labels in progress_bar:
             inputs, labels = inputs.to(device), labels.to(device)
@@ -140,8 +147,9 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=5, pret
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'scheduler_state_dict': scheduler.state_dict(),
-                'loss': val_loss/len(val_loader),
-                'best_val_accuracy': best_val_accuracy
+                'val_loss': val_loss/len(val_loader),
+                'best_val_accuracy': best_val_accuracy,
+                'no_improve_epochs': no_improve_epochs
             }
             save_path = os.path.join(checkpoint_dir, f"model_epoch_{epoch+1}.pth")
             torch.save(checkpoint, save_path)
