@@ -119,6 +119,7 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=5, pret
                 correct += predicted.eq(labels).sum().item()
 
         val_accuracy = 100.0 * correct / total
+        print(f"length of val_loader: {len(val_loader)}")
         print(f"Validation Loss: {val_loss/len(val_loader):.4f}, Validation Accuracy: {val_accuracy:.2f}%")
 
         # Log metrics to TensorBoard
