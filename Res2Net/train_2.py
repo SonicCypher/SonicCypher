@@ -47,11 +47,10 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
 
     writer = SummaryWriter(log_dir='runs/speaker_verification') 
 
-    best_val_accuracy = 0
     no_improve_epochs = 0
     model.to(device)
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    scheduler = CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-5)
+    optimizer = optim.Adam(model.parameters(), lr=0.1, weight_decay=1e-4)
+    scheduler = CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-3)
 
     if pretrained:
         checkpoint_files = glob.glob(os.path.join(checkpoint_dir, "model_epoch_*.pth"))
@@ -63,17 +62,19 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
             model.load_state_dict(checkpoint['model_state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-            val_loss = checkpoint['val_loss']
-            best_val_accuracy = checkpoint['best_val_accuracy']
+            val_accuracy = checkpoint['val_accuracy']
+            best_val_loss = checkpoint['best_val_loss']
             start_epoch = checkpoint.get('epoch', 1)
             print(f"Resuming training from epoch {start_epoch} with val_loss: {val_loss:.4f}",
-              f"best_val_accuracy: {best_val_accuracy:.2f}%" )
+              f"best_val_accuracy: {val_accuracy:.2f}%" )
         else:
             print("No pretrained model found, training from scratch.")
             start_epoch = 1 
+            best_val_loss = float('inf')
     else:
         print("Training from scratch.")
         start_epoch = 1
+        best_val_loss = float('inf')
 
     model.to(device)
     criterion = nn.CrossEntropyLoss()
@@ -124,7 +125,6 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
                 correct += predicted.eq(labels).sum().item()
 
         val_accuracy = 100.0 * correct / total
-        print(f"length of val_loader: {len(val_loader)}")
         print(f"Validation Loss: {val_loss/len(val_loader):.4f}, Validation Accuracy: {val_accuracy:.2f}%")
 
         # Log metrics to TensorBoard
@@ -135,9 +135,15 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
         writer.add_scalar('Validation Accuracy', val_accuracy, epoch)
 
         # Early stopping
-        if val_accuracy > best_val_accuracy:
-            best_val_accuracy = val_accuracy
+        current_val_loss = val_loss/len(val_loader)
+
+        if current_val_loss < best_val_loss:
+            best_val_loss = current_val_loss
             no_improve_epochs = 0
+
+        # if val_accuracy > best_val_accuracy:
+        #     best_val_accuracy = val_accuracy
+        #     no_improve_epochs = 0
             
             # Save the model checkpoint
             checkpoint ={
@@ -145,12 +151,12 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'scheduler_state_dict': scheduler.state_dict(),
-                'val_loss': val_loss/len(val_loader),
-                'best_val_accuracy': best_val_accuracy,
+                'best_val_loss': best_val_loss,
+                'val_accuracy': val_accuracy,
             }
             save_path = os.path.join(checkpoint_dir, f"model_epoch_{epoch}.pth")
             torch.save(checkpoint, save_path)
-            print(f"Model saved at {save_path} with validation accuracy: {best_val_accuracy:.2f}%")
+            print(f"Model saved at {save_path} with validation accuracy: {val_accuracy:.2f}% and best validation loss: {best_val_loss:.4f}")
 
         else:
             no_improve_epochs += 1
@@ -184,14 +190,14 @@ full_train_dataset = MFCCDataset(train_mfcc_files, train_spkid_files)
 full_val_dataset = MFCCDataset(val_mfcc_files, val_spkid_files)
 
 # Create DataLoaders
-train_loader = DataLoader(full_train_dataset, batch_size=15, shuffle=False)
+train_loader = DataLoader(full_train_dataset, batch_size=15, shuffle=True)
 val_loader = DataLoader(full_val_dataset, batch_size=15, shuffle=False)
 
 device = torch.device("cuda")
-model = se_res2net50_v1b(num_classes=1211)
+model = se_res2net50_v1b(dropblock_prob=0.1, num_classes=1211)
 
 epochs = 100
-patience = 12 
+patience = 10
 pretrained = True
 
 train_model(model,train_loader,val_loader, epochs, device, patience, pretrained)
