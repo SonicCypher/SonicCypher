@@ -16,3 +16,7 @@ noise_csv/
 output/
 Sonic-data/
 voxceleb/
+
+runs/
+*.txt
+

@@ -80,7 +80,7 @@ class ResNet(nn.Module):
         return F.log_softmax(out, dim=-1)
 
 class Res2Net(nn.Module):
-    def __init__(self, block, layers, baseWidth=26, scale=4, m=0.35, num_classes=10, loss='softmax', dropblock_prob=0.1, **kwargs):
+    def __init__(self, block, layers, baseWidth=26, scale=4, m=0.35, num_classes=10, loss='softmax', **kwargs):
         self.inplanes = 16
         super(Res2Net, self).__init__()
         self.loss = loss
@@ -94,10 +94,10 @@ class Res2Net(nn.Module):
         self.bn1 = nn.BatchNorm2d(16)
         self.relu = nn.ReLU()
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 16, layers[0], dropblock_prob)#64
-        self.layer2 = self._make_layer(block, 32, layers[1], stride=2,dropblock_prob = dropblock_prob)#128
-        self.layer3 = self._make_layer(block, 64, layers[2], stride=2,dropblock_prob = dropblock_prob)#256
-        self.layer4 = self._make_layer(block, 128, layers[3], stride=2,dropblock_prob = dropblock_prob)#512
+        self.layer1 = self._make_layer(block, 16, layers[0])#64
+        self.layer2 = self._make_layer(block, 32, layers[1], stride=2)#128
+        self.layer3 = self._make_layer(block, 64, layers[2], stride=2)#256
+        self.layer4 = self._make_layer(block, 128, layers[3], stride=2)#512
         self.avgpool = nn.AdaptiveAvgPool2d(1)
 
         if self.loss == 'softmax':
@@ -115,7 +115,7 @@ class Res2Net(nn.Module):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
-    def _make_layer(self, block, planes, blocks, stride=1, dropblock_prob=0.1):
+    def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
@@ -139,16 +139,15 @@ class Res2Net(nn.Module):
                   downsample=downsample,
                   stype='stage',
                   baseWidth=self.baseWidth,
-                  scale=self.scale,
-                  dropblock_prob=dropblock_prob))
+                  scale=self.scale))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
             layers.append(
                 block(self.inplanes,
                       planes,
                       baseWidth=self.baseWidth,
-                      scale=self.scale,
-                      dropblock_prob=dropblock_prob))
+                      scale=self.scale
+                     ))
 
         return nn.Sequential(*layers)
 
@@ -258,11 +257,11 @@ def res2net50_v1b(**kwargs):
 
 
 
-def se_res2net50_v1b(dropblock_prob=0.1, **kwargs):
+def se_res2net50_v1b(**kwargs):
     """Constructs a Res2Net-50_v1b model.
     Res2Net-50 refers to the Res2Net-50_v1b_26w_4s.
     """
-    model = Res2Net(SEBottle2neck, [3, 4, 6, 3], baseWidth=26, scale=4,dropblock_prob=dropblock_prob **kwargs)
+    model = Res2Net(SEBottle2neck, [3, 4, 6, 3], baseWidth=26, scale=4, **kwargs)
     return model
 
 def res2net50_v1b_14w_8s(**kwargs):

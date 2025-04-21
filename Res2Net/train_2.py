@@ -49,8 +49,10 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
 
     no_improve_epochs = 0
     model.to(device)
-    optimizer = optim.Adam(model.parameters(), lr=0.1, weight_decay=1e-4)
-    scheduler = CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-3)
+    optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
+    scheduler = CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-4)
+    
+    loadedFromCheckpoint = False
 
     if pretrained:
         checkpoint_files = glob.glob(os.path.join(checkpoint_dir, "model_epoch_*.pth"))
@@ -65,7 +67,8 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
             val_accuracy = checkpoint['val_accuracy']
             best_val_loss = checkpoint['best_val_loss']
             start_epoch = checkpoint.get('epoch', 1)
-            print(f"Resuming training from epoch {start_epoch} with val_loss: {val_loss:.4f}",
+            loadedFromCheckpoint = True
+            print(f"Resuming training from epoch {start_epoch} with val_loss: {best_val_loss:.4f}",
               f"best_val_accuracy: {val_accuracy:.2f}%" )
         else:
             print("No pretrained model found, training from scratch.")
@@ -78,6 +81,9 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
 
     model.to(device)
     criterion = nn.CrossEntropyLoss()
+    
+    if loadedFromCheckpoint:
+        start_epoch += 1
 
     for epoch in range(start_epoch,epochs+1):
         # Training phase
@@ -118,12 +124,14 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
                 inputs, labels = inputs.to(device), labels.to(device)
                 outputs = model(inputs)
                 loss = criterion(outputs, labels)
+                # print(f"Validation Loss large: {loss.item():.4f}")
                 val_loss += loss.item()
                 _, predicted = outputs.max(1)
 
                 total += labels.size(0)
                 correct += predicted.eq(labels).sum().item()
-
+                
+        print(f"validation loss not divided by len: {val_loss:.4f} and len of loader: {len(val_loader):.4f}")
         val_accuracy = 100.0 * correct / total
         print(f"Validation Loss: {val_loss/len(val_loader):.4f}, Validation Accuracy: {val_accuracy:.2f}%")
 
@@ -190,7 +198,7 @@ full_train_dataset = MFCCDataset(train_mfcc_files, train_spkid_files)
 full_val_dataset = MFCCDataset(val_mfcc_files, val_spkid_files)
 
 # Create DataLoaders
-train_loader = DataLoader(full_train_dataset, batch_size=15, shuffle=True)
+train_loader = DataLoader(full_train_dataset, batch_size=15, shuffle=False)
 val_loader = DataLoader(full_val_dataset, batch_size=15, shuffle=False)
 
 device = torch.device("cuda")
