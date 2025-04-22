@@ -122,11 +122,15 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
         with torch.no_grad():
             for inputs, labels in tqdm(val_loader, desc="Validating", unit="batch"):
                 inputs, labels = inputs.to(device), labels.to(device)
+                # print labels
+                # print(labels)
                 outputs = model(inputs)
                 loss = criterion(outputs, labels)
                 # print(f"Validation Loss large: {loss.item():.4f}")
                 val_loss += loss.item()
                 _, predicted = outputs.max(1)
+                # print predicted
+                # print(predicted)
 
                 total += labels.size(0)
                 correct += predicted.eq(labels).sum().item()

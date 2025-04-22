@@ -261,7 +261,7 @@ def se_res2net50_v1b(**kwargs):
     """Constructs a Res2Net-50_v1b model.
     Res2Net-50 refers to the Res2Net-50_v1b_26w_4s.
     """
-    model = Res2Net(SEBottle2neck, [3, 4, 6, 3], baseWidth=26, scale=4, **kwargs)
+    model = Res2Net(SEBottle2neck, [2, 2, 2, 2], baseWidth=26, scale=4, **kwargs)
     return model
 
 def res2net50_v1b_14w_8s(**kwargs):
