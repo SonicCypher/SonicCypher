@@ -79,8 +79,10 @@ def dataio_prep(data_folder, save_folder, train_annotation, valid_annotation):
 
 def MFCC_extracter_train(data, device):
 
-    noise_folder = r"Model/noise/free-sound"
-    speech_folder = r"Model/noise/librivox"
+    # noise_folder = r"Model/noise/free-sound"
+    noise_folder = r"/home/cse/SonicCypher/Speaker_Veri_Dataset/noise/free-sound"
+    # speech_folder = r"Model/noise/librivox"
+    speech_folder = r"/home/cse/SonicCypher/Speaker_Veri_Dataset/noise/librivox"
 
     noise_filelist = get_all_files(noise_folder, match_and=['.wav'])
     speech_filelist = get_all_files(speech_folder, match_and=['.wav'])

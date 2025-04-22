@@ -158,7 +158,9 @@ def get_verification_scores(veri_test):
 def dataio_prep():
     "Creates the dataloaders and their data processing pipelines."
 
-    data_folder = r"/mnt/additional-volume/voxdata/vox1_dev_wav"
+    # data_folder = r"/mnt/additional-volume/voxdata/vox1_dev_wav"
+    data_folder ="/home/cse/SonicCypher/Speaker_Veri_Dataset/voxceleb/wav/vox1_dev_wav"
+
 
     # Train data (used for normalization)
     train_data = sb.dataio.dataset.DynamicItemDataset.from_csv(
@@ -305,11 +307,13 @@ if __name__ == "__main__":
 
     from Preprocessing.Voxceleb.prepare_voxceleb import prepare_voxceleb
 
-    data_folder = "/mnt/additional-volume/voxdata/vox1_dev_wav"
+    # data_folder = "/mnt/additional-volume/voxdata/vox1_dev_wav"
+    data_folder ="/home/cse/SonicCypher/Speaker_Veri_Dataset/voxceleb/wav/vox1_dev_wav"
     save_folder_csv = "./Preprocessing/Voxceleb/output"
     splits = ['train', 'dev','test']
     split_ratio = [90, 10]
-    verification_pairs_file = r"/mnt/additional-volume/voxdata/vox1_dev_wav/veri_test.txt"
+    # verification_pairs_file = r"/mnt/additional-volume/voxdata/vox1_dev_wav/veri_test.txt"
+    verification_pairs_file = r"/home/cse/SonicCypher/Speaker_Veri_Dataset/voxceleb/meta/veri_test.txt"
     print("Preparing VoxCeleb data...")
 
     prepare_voxceleb(data_folder,save_folder_csv, verification_pairs_file,splits,split_ratio)
