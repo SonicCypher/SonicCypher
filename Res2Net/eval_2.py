@@ -159,7 +159,7 @@ def dataio_prep():
     "Creates the dataloaders and their data processing pipelines."
 
     # data_folder = r"/mnt/additional-volume/voxdata/vox1_dev_wav"
-    data_folder ="/home/cse/SonicCypher/Speaker_Veri_Dataset/voxceleb/wav/vox1_dev_wav"
+    data_folder ="/home/cse/SonicCypher/Speaker_Veri_Dataset/voxdata/vox1_dev_wav"
 
 
     # Train data (used for normalization)
