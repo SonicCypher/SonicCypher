@@ -37,9 +37,12 @@ class MFCCDataset(Dataset):
       mfcc_data = np.load(self.mfcc_files[idx])
       spkid_data = np.load(self.spkid_files[idx])
 
-      # check mfcc_file and spkid_file match each other 
-      if os.path.basename(self.mfcc_files[idx]) != os.path.basename(self.spkid_files[idx]):
+      mfcc_id = os.path.basename(self.mfcc_files[idx]).replace("mfcc_", "")
+      spkid_id = os.path.basename(self.spkid_files[idx]).replace("spkid_", "")
+
+      if mfcc_id != spkid_id:
         raise ValueError(f"MFCC file {self.mfcc_files[idx]} does not match speaker ID file {self.spkid_files[idx]}")
+
       # Add channel dimension to mfcc_data
       mfcc_data = np.expand_dims(mfcc_data, axis=0)
       # Ensure spkid_data is 1D (flatten if necessary)
