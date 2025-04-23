@@ -36,6 +36,10 @@ class MFCCDataset(Dataset):
       """
       mfcc_data = np.load(self.mfcc_files[idx])
       spkid_data = np.load(self.spkid_files[idx])
+
+      # check mfcc_file and spkid_file match each other 
+      if os.path.basename(self.mfcc_files[idx]) != os.path.basename(self.spkid_files[idx]):
+        raise ValueError(f"MFCC file {self.mfcc_files[idx]} does not match speaker ID file {self.spkid_files[idx]}")
       # Add channel dimension to mfcc_data
       mfcc_data = np.expand_dims(mfcc_data, axis=0)
       # Ensure spkid_data is 1D (flatten if necessary)
@@ -192,8 +196,8 @@ full_train_dataset = MFCCDataset(train_mfcc_files, train_spkid_files)
 full_val_dataset = MFCCDataset(val_mfcc_files, val_spkid_files)
 
 # Create DataLoaders
-train_loader = DataLoader(full_train_dataset, batch_size=30, shuffle=False)
-val_loader = DataLoader(full_val_dataset, batch_size=30, shuffle=False)
+train_loader = DataLoader(full_train_dataset, batch_size=50, shuffle=True)
+val_loader = DataLoader(full_val_dataset, batch_size=50, shuffle=False)
 
 device = torch.device("cuda")
 model = se_res2net50_v1b(num_classes=1211)
