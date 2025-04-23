@@ -192,8 +192,8 @@ full_train_dataset = MFCCDataset(train_mfcc_files, train_spkid_files)
 full_val_dataset = MFCCDataset(val_mfcc_files, val_spkid_files)
 
 # Create DataLoaders
-train_loader = DataLoader(full_train_dataset, batch_size=15, shuffle=False)
-val_loader = DataLoader(full_val_dataset, batch_size=15, shuffle=False)
+train_loader = DataLoader(full_train_dataset, batch_size=30, shuffle=False)
+val_loader = DataLoader(full_val_dataset, batch_size=30, shuffle=False)
 
 device = torch.device("cuda")
 model = se_res2net50_v1b(num_classes=1211)
