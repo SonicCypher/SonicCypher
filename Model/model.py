@@ -120,7 +120,7 @@ def MFCC_extracter_train(data, device):
         augmentations=[add_noise, add_babble],
     )
 
-    feats = sb.lobes.features.MFCC(n_mfcc=80, n_mels=100, deltas=False, context=False)
+    feats = sb.lobes.features.MFCC(n_mfcc=24, n_mels=44, deltas=False, context=False)
 
     #Assuming you have defined your dataset
     train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=0, pin_memory=True)
@@ -183,7 +183,7 @@ def MFCC_extracter_train(data, device):
 
 def MFCC_extracter_valid(data, device):
         
-        feats = sb.lobes.features.MFCC(n_mfcc=80, n_mels=100, deltas=False, context=False)
+        feats = sb.lobes.features.MFCC(n_mfcc=24, n_mels=44, deltas=False, context=False)
 
         # Assuming you have defined your dataset
         train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=0, pin_memory=True)
