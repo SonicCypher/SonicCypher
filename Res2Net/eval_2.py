@@ -322,6 +322,7 @@ if __name__ == "__main__":
     last_best_model = torch.load("checkpoints/model_epoch_13.pth", map_location=run_opts["device"])
     model.load_state_dict(last_best_model["model_state_dict"])
     model.eval()
+    model.to(run_opts["device"]) 
 
     enrol_dict = compute_embedding_loop(enrol_dataloader)
     test_dict = compute_embedding_loop(test_dataloader)
