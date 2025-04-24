@@ -329,7 +329,7 @@ if __name__ == "__main__":
     train_dict = compute_embedding_loop(train_dataloader)
 
     # Compute the EER
-    logger.info("Computing EER..")
+    print("Computing EER..")
     # Reading standard verification split
     with open(verification_pairs_file, encoding="utf-8") as f:
         veri_test = [line.rstrip() for line in f]
@@ -339,8 +339,10 @@ if __name__ == "__main__":
 
     eer, th = EER(torch.tensor(positive_scores), torch.tensor(negative_scores))
     logger.info("EER(%%)=%f", eer * 100)
+    print("EER(%%)=%f", eer * 100)
 
     min_dcf, th = minDCF(
         torch.tensor(positive_scores), torch.tensor(negative_scores)
     )
     logger.info("minDCF=%f", min_dcf * 100)
+    print("minDCF=%f", min_dcf * 100)
