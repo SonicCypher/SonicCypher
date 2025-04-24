@@ -227,10 +227,9 @@ if __name__ == "__main__":
     sys.path.append(os.path.dirname(current_dir))
 
     run_opts = {
-    "device": "cpu",
-   # Number of workers for data loading
-    # Add other runtime options as needed
+    "device": "cuda" if torch.cuda.is_available() else "cpu"
 }
+
 
     # # Load hyperparameters file with command-line overrides
     # params_file, run_opts, overrides = sb.core.parse_arguments(sys.argv[1:])
@@ -320,7 +319,7 @@ if __name__ == "__main__":
 
     model = se_res2net50_v1b(num_classes=1211)
     # model.load_state_dict(torch.load("best_model.pth", map_location=run_opts["device"]))
-    last_best_model = torch.load("best_model.pth", map_location=run_opts["device"])
+    last_best_model = torch.load("checkpoints/model_epoch_13.pth", map_location=run_opts["device"])
     model.load_state_dict(last_best_model["model_state_dict"])
     model.eval()
 
