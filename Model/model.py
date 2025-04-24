@@ -87,6 +87,8 @@ def MFCC_extracter_train(data, device):
     noise_filelist = get_all_files(noise_folder, match_and=['.wav'])
     speech_filelist = get_all_files(speech_folder, match_and=['.wav'])
 
+    os.makedirs("Model/noise_csv", exist_ok=True)
+
     noise_csv = r"Model/noise_csv/noise.csv"
     speech_csv = r"Model/noise_csv/speech.csv"
 
