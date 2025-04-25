@@ -81,7 +81,7 @@ class ResNet(nn.Module):
 
 class Res2Net(nn.Module):
     def __init__(self, block, layers, baseWidth=26, scale=4, m=0.35, num_classes=10, loss='softmax', dropblock_prob=0.1,  **kwargs):
-        print(num_classes)
+        # print(num_classes)
         self.inplanes = 16
         super(Res2Net, self).__init__()
         self.loss = loss

@@ -97,8 +97,8 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
         progress_bar = tqdm(train_loader, desc=f"Epoch {epoch}/{epochs}", leave=False)
         
         for inputs, labels in progress_bar:
-            batch_size = inputs.shape[0]  # get batch size from the first dimension
-            print(f"Current batch size: {batch_size}")
+            # batch_size = inputs.shape[0]  # get batch size from the first dimension
+            # print(f"Current batch size: {batch_size}")
 
             inputs, labels = inputs.to(device), labels.to(device)
             optimizer.zero_grad()
