@@ -3,7 +3,7 @@
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
-
+from timm.models.layers import DropBlock2d
 import math
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -277,7 +277,8 @@ class SEBottle2neck(nn.Module):
                  downsample=None,
                  baseWidth=26,
                  scale=4,
-                 stype='normal'):
+                 stype='normal',
+                 dropblock_prob=0.1):
         """ Constructor
         Args:
             inplanes: input channel dimensionality
@@ -328,6 +329,7 @@ class SEBottle2neck(nn.Module):
         self.stype = stype
         self.scale = scale
         self.width = width
+        self.dropblock = DropBlock2d(drop_prob=dropblock_prob, block_size=3) if dropblock_prob > 0 else nn.Identity()
 
     def forward(self, x):
         residual = x
@@ -360,6 +362,9 @@ class SEBottle2neck(nn.Module):
         out = self.bn3(out)
         out = self.se(out)
         #print('se :', out.size())
+        out = self.maybe_apply_dropblock(out)
+        # print('dropblock: ', out.size())
+        # out = self.dropblock(out)  
 
         if self.downsample is not None:
             residual = self.downsample(x)
@@ -368,5 +373,11 @@ class SEBottle2neck(nn.Module):
         out = self.relu(out)
 
         return out
-
-
+    
+    def maybe_apply_dropblock(self, x):
+        if isinstance(self.dropblock, DropBlock2d):
+            _, _, h, w = x.shape
+            if h < self.dropblock.block_size or w < self.dropblock.block_size:
+                # print("Skipping DropBlock due to spatial dimensions smaller than block size.")
+                return x  # skip DropBlock
+        return self.dropblock(x)

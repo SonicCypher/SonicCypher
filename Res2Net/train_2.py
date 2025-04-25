@@ -206,7 +206,7 @@ train_loader = DataLoader(full_train_dataset, batch_size=30, shuffle=True)
 val_loader = DataLoader(full_val_dataset, batch_size=30, shuffle=False)
 
 device = torch.device("cuda")
-model = se_res2net50_v1b(num_classes=1211)
+model = se_res2net50_v1b(dropblock_prob=0.1,num_classes=1211)
 
 epochs = 100
 patience = 10
