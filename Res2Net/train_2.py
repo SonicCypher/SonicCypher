@@ -97,6 +97,9 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
         progress_bar = tqdm(train_loader, desc=f"Epoch {epoch}/{epochs}", leave=False)
         
         for inputs, labels in progress_bar:
+            batch_size = inputs.shape[0]  # get batch size from the first dimension
+            print(f"Current batch size: {batch_size}")
+
             inputs, labels = inputs.to(device), labels.to(device)
             optimizer.zero_grad()
             outputs = model(inputs)
@@ -199,8 +202,8 @@ full_train_dataset = MFCCDataset(train_mfcc_files, train_spkid_files)
 full_val_dataset = MFCCDataset(val_mfcc_files, val_spkid_files)
 
 # Create DataLoaders
-train_loader = DataLoader(full_train_dataset, batch_size=50, shuffle=True)
-val_loader = DataLoader(full_val_dataset, batch_size=50, shuffle=False)
+train_loader = DataLoader(full_train_dataset, batch_size=30, shuffle=True)
+val_loader = DataLoader(full_val_dataset, batch_size=30, shuffle=False)
 
 device = torch.device("cuda")
 model = se_res2net50_v1b(num_classes=1211)

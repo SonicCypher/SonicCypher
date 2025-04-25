@@ -38,7 +38,7 @@ def compute_embedding(wavs):
         lengths = [len(wav) for wav in wavs]  # Get lengths of each waveform
         max_length = max(lengths)  # Find the maximum length in the batch
         wav_lens = torch.tensor([length / max_length for length in lengths], dtype=torch.float32).to(run_opts["device"])
-        feats = sb.lobes.features.MFCC(n_mfcc=80, n_mels=100, deltas=False, context=False)
+        feats = sb.lobes.features.MFCC(n_mfcc=24, n_mels=44, deltas=False, context=False)
         normalization = sb.processing.features.InputNormalization(norm_type="sentence",std_norm=False)
 
         features = feats(wavs)
