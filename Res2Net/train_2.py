@@ -50,16 +50,20 @@ class MFCCDataset(Dataset):
       return torch.tensor(mfcc_data, dtype=torch.float32), torch.tensor(spkid_data, dtype=torch.long)
 
 
-def train_model(model,train_loader, val_loader, epochs, device, patience=12, pretrained=False):
+def train_model(model,train_loader, val_loader, epochs, device, patience=10, pretrained=False):
 
     writer = SummaryWriter(log_dir='runs/speaker_verification') 
+    
+    # Key modification 1: Fixed T_max for consistent LR scheduling
+    T_MAX = 50  # Independent of total epochs
+    MIN_EPOCHS = 20  # Minimum epochs before early stopping can trigger
 
     # best_val_accuracy = 0
     best_val_loss = float('inf')
     no_improve_epochs = 0
     model.to(device)
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    scheduler = CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-5)
+    optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
+    scheduler = CosineAnnealingLR(optimizer, T_max=T_MAX, eta_min=1e-5)
 
     if pretrained:
         checkpoint_files = glob.glob(os.path.join(checkpoint_dir, "model_epoch_*.pth"))
@@ -173,7 +177,8 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
         else:
             no_improve_epochs += 1
 
-        if no_improve_epochs >= patience:
+        early_stop = (epoch > MIN_EPOCHS) and (no_improve_epochs >= patience)
+        if early_stop:
             print("Early stopping triggered.")
             break
         print(f"{epoch} epochs is done.")
@@ -208,7 +213,7 @@ val_loader = DataLoader(full_val_dataset, batch_size=30, shuffle=False)
 device = torch.device("cuda")
 model = se_res2net50_v1b(num_classes=1211,dropblock_prob=0.2)
 
-epochs = 30
+epochs = 100
 patience = 10
 pretrained = True
 

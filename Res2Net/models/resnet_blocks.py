@@ -380,4 +380,5 @@ class SEBottle2neck(nn.Module):
             if h < self.dropblock.block_size or w < self.dropblock.block_size:
                 # print("Skipping DropBlock due to spatial dimensions smaller than block size.")
                 return x  # skip DropBlock
+        print('applying dropblock')
         return self.dropblock(x)
