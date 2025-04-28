@@ -47,7 +47,7 @@ def prepare_ASV_verification(
     save_opt = os.path.join(save_folder, OPT_FILE)
     
     # Check if this phase is already done (if so, skip it)
-    if skip(save_folder, conf):
+    if skip(["test","enrol"], save_folder, conf):
         print("Skipping preparation, completed in previous run.")
         return
     
