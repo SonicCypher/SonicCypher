@@ -55,7 +55,7 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=10, pre
     writer = SummaryWriter(log_dir='runs/speaker_verification') 
     
     # Key modification 1: Fixed T_max for consistent LR scheduling
-    T_MAX = 50  # Independent of total epochs
+    T_MAX = 60  # Independent of total epochs
     MIN_EPOCHS = 20  # Minimum epochs before early stopping can trigger
 
     # best_val_accuracy = 0
