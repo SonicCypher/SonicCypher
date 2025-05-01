@@ -55,7 +55,7 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=10, pre
     writer = SummaryWriter(log_dir='runs/speaker_verification') 
     
     # Key modification 1: Fixed T_max for consistent LR scheduling
-    T_MAX = 70  # Independent of total epochs
+    T_MAX = 100  # Independent of total epochs
     MIN_EPOCHS = 20  # Minimum epochs before early stopping can trigger
 
     # best_val_accuracy = 0
@@ -63,7 +63,7 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=10, pre
     no_improve_epochs = 0
     model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
-    scheduler = CosineAnnealingLR(optimizer, T_max=T_MAX, eta_min=1e-5)
+    scheduler = CosineAnnealingLR(optimizer, T_max=T_MAX, eta_min=1e-6)
 
     if pretrained:
         checkpoint_files = glob.glob(os.path.join(checkpoint_dir, "model_epoch_*.pth"))
