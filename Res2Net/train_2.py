@@ -62,7 +62,7 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=10, pre
     best_val_loss = float('inf')
     no_improve_epochs = 0
     model.to(device)
-    optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
+    optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
     scheduler = CosineAnnealingLR(optimizer, T_max=T_MAX, eta_min=1e-6)
 
     if pretrained:
