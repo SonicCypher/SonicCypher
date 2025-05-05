@@ -181,7 +181,7 @@ class Res2Net(nn.Module):
         # x = x.view(x.size(0), -1)
         # x = torch.flatten(x, 1)
         x = self.stats_pooling(x)
-        print('flatten stat: ', x.size())
+        # print('flatten stat: ', x.size())
         # x = self.cls_layer(x)
         embeddings = self.projection(x)
         if self.training:
