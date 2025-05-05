@@ -51,7 +51,7 @@ class MFCCDataset(Dataset):
       return torch.tensor(mfcc_data, dtype=torch.float32), torch.tensor(spkid_data, dtype=torch.long)
 
 class AAMSoftmaxLoss(nn.Module):
-    def __init__(self, margin=0.2, scale=30):
+    def __init__(self,n_classes,embedding_dim, margin=0.2, scale=30):
         super(AAMSoftmaxLoss, self).__init__()
         self.margin = margin
         self.scale = scale
@@ -69,6 +69,8 @@ class AAMSoftmaxLoss(nn.Module):
         
         # Convert one-hot
         one_hot = torch.zeros_like(cosine)
+        num_classes = one_hot.shape(1)
+        assert labels.max().item() <num_classes, f"Label value {labels.max().item()} exceeds num_classes={num_classes}"
         one_hot.scatter_(1, labels.view(-1, 1), 1)
         
         # Select and scale
@@ -117,9 +119,9 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=10, pre
 
     model.to(device)
     # criterion = nn.CrossEntropyLoss()
-    # num_classes = 1211  # Based on your VoxCeleb dataset
-    # embedding_dim = 512  # Must match the dimension in your projection layer
-    criterion = AAMSoftmaxLoss(margin=0.2, scale=30)
+    num_classes = 1211  # Based on your VoxCeleb dataset
+    embedding_dim = 512  # Must match the dimension in your projection layer
+    criterion = AAMSoftmaxLoss(n_classes=num_classes,embedding_dim=embedding_dim,margin=0.2, scale=30)
 
     for epoch in range(start_epoch,epochs+1):
         # Training phase
