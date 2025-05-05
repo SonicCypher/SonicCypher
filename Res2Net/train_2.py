@@ -13,6 +13,7 @@ import glob
 from torch.utils.tensorboard import SummaryWriter
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from run_pipline import MFCC_Extraction
+import math
 
 checkpoint_dir = "checkpoints"
 
@@ -49,12 +50,37 @@ class MFCCDataset(Dataset):
       spkid_data = np.squeeze(spkid_data)
       return torch.tensor(mfcc_data, dtype=torch.float32), torch.tensor(spkid_data, dtype=torch.long)
 
+class AAMSoftmaxLoss(nn.Module):
+    def __init__(self, margin=0.2, scale=30):
+        super(AAMSoftmaxLoss, self).__init__()
+        self.margin = margin
+        self.scale = scale
+        self.cos_m = math.cos(margin)
+        self.sin_m = math.sin(margin)
+        self.th = math.cos(math.pi - margin)
+        self.mm = math.sin(math.pi - margin) * margin
+
+    def forward(self, cosine, labels):
+        sine = torch.sqrt((1.0 - torch.pow(cosine, 2)).clamp(0, 1))
+        phi = cosine * self.cos_m - sine * self.sin_m  # cos(θ+m)
+        
+        # For numerical stability
+        phi = torch.where(cosine > self.th, phi, cosine - self.mm)
+        
+        # Convert one-hot
+        one_hot = torch.zeros_like(cosine)
+        one_hot.scatter_(1, labels.view(-1, 1), 1)
+        
+        # Select and scale
+        output = (one_hot * phi) + ((1.0 - one_hot) * cosine)
+        output = output * self.scale
+        
+        return nn.CrossEntropyLoss()(output, labels)
 
 def train_model(model,train_loader, val_loader, epochs, device, patience=10, pretrained=False):
 
     writer = SummaryWriter(log_dir='runs/speaker_verification') 
     
-    # Key modification 1: Fixed T_max for consistent LR scheduling
     T_MAX = 100  # Independent of total epochs
     MIN_EPOCHS = 20  # Minimum epochs before early stopping can trigger
 
@@ -90,7 +116,10 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=10, pre
         start_epoch = 1
 
     model.to(device)
-    criterion = nn.CrossEntropyLoss()
+    # criterion = nn.CrossEntropyLoss()
+    # num_classes = 1211  # Based on your VoxCeleb dataset
+    # embedding_dim = 512  # Must match the dimension in your projection layer
+    criterion = AAMSoftmaxLoss(margin=0.2, scale=30)
 
     for epoch in range(start_epoch,epochs+1):
         # Training phase

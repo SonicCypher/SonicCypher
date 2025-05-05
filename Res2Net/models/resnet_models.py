@@ -80,7 +80,7 @@ class ResNet(nn.Module):
         return F.log_softmax(out, dim=-1)
 
 class Res2Net(nn.Module):
-    def __init__(self, block, layers, baseWidth=26, scale=4, m=0.35, num_classes=10, loss='softmax', dropblock_prob=0.1,  **kwargs):
+    def __init__(self, block, layers, baseWidth=26, scale=4, m=0.35, num_classes=10, loss='AAMSoftmaxLoss', dropblock_prob=0.1,  **kwargs):
         # print(num_classes)
         self.inplanes = 16
         super(Res2Net, self).__init__()
@@ -102,9 +102,13 @@ class Res2Net(nn.Module):
         self.stats_pooling = AttentiveStatsPool(in_dim=128*block.expansion)
         # self.avgpool = nn.AdaptiveAvgPool2d(1)
 
-        if self.loss == 'softmax':
+        if self.loss == 'AAMSoftmaxLoss':
             # self.cls_layer = nn.Linear(2*8*128*block.expansion, num_classes)
-            self.cls_layer = nn.Linear(2*128*block.expansion, num_classes)
+            # self.cls_layer = nn.Linear(2*128*block.expansion, num_classes)
+            self.embedding_dim = 512
+            self.projection = Projection(2*128*block.expansion, self.embedding_dim)
+            self.weight = nn.Parameter(torch.FloatTensor(num_classes, self.embedding_dim))
+            nn.init.kaiming_normal_(self.weight, mode='fan_out', nonlinearity='relu')
         else:
             raise NotImplementedError
 
@@ -177,10 +181,17 @@ class Res2Net(nn.Module):
         # x = x.view(x.size(0), -1)
         # x = torch.flatten(x, 1)
         x = self.stats_pooling(x)
-        # print('flatten: ', x.size())
-        x = self.cls_layer(x)
+        print('flatten stat: ', x.size())
+        # x = self.cls_layer(x)
+        embeddings = self.projection(x)
+        if self.training:
+            cosine_sim = F.linear(embeddings, F.normalize(self.weight, p=2, dim=1))
+            return cosine_sim
+        else:
+            return embeddings
 
-        return F.log_softmax(x, dim=-1)
+
+        # return F.log_softmax(x, dim=-1)
 
     def extract(self, x):
         # x = x[:, None, ...]
@@ -202,9 +213,12 @@ class Res2Net(nn.Module):
         # x = self.avgpool(x)
         # x = torch.flatten(x, 1)
         x = self.stats_pooling(x) 
+        # Get embeddings through projection
+        embeddings = self.projection(x)
+        return embeddings
 
         # print('flatten: ', x.size())
-        return x
+        # return x
     # Allow for accessing forward method in a inherited class
     forward = _forward
 
@@ -226,6 +240,17 @@ class AttentiveStatsPool(nn.Module):
         mu = torch.sum(x * w, dim=2)                # Weighted mean
         sigma = torch.sqrt((torch.sum((x**2) * w, dim=2) - mu**2).clamp(min=1e-5))  # Weighted std
         return torch.cat((mu, sigma), dim=1)        # Shape: (B, 2C)
+
+class Projection(nn.Module):
+    def __init__(self, in_dim, out_dim=512):
+        super().__init__()
+        self.fc = nn.Linear(in_dim, out_dim)
+        self.bn = nn.BatchNorm1d(out_dim)
+        
+    def forward(self, x):
+        x = self.fc(x)
+        x = self.bn(x)
+        return F.normalize(x, p=2, dim=1)  # L2 normalization
 
 ''' ResNet models'''
 def resnet18(**kwargs):
@@ -322,11 +347,11 @@ def se_res2net50_v1b_26w_8s(**kwargs):
     return model
 
 
-if __name__ == '__main__':
-    images = torch.rand(2, 1, 257, 400)
-    label = torch.randint(0, 2, (2,)).long()
-    model = se_res2net50_v1b(pretrained=False, num_classes=3)
-    #model = model.cuda(0)
-    output = model(images)
-    print(images.size())
-    print(output.size())
+# if __name__ == '__main__':
+#     images = torch.rand(2, 1, 257, 400)
+#     label = torch.randint(0, 2, (2,)).long()
+#     model = se_res2net50_v1b(pretrained=False, num_classes=3)
+#     #model = model.cuda(0)
+#     output = model(images)
+#     print(images.size())
+#     print(output.size())
