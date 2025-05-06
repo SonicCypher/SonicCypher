@@ -108,6 +108,8 @@ class Res2Net(nn.Module):
             self.embedding_dim = 512
             self.projection = Projection(2*128*block.expansion, self.embedding_dim)
             self.weight = nn.Parameter(torch.FloatTensor(num_classes, self.embedding_dim))
+            # want to print model weight shape
+            print('weight shape: ', self.weight.shape)
             nn.init.kaiming_normal_(self.weight, mode='fan_out', nonlinearity='relu')
         else:
             raise NotImplementedError
