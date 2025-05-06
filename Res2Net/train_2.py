@@ -74,7 +74,6 @@ class AAMSoftmaxLoss(nn.Module):
         
         # Convert one-hot
         one_hot = torch.zeros_like(cosine)
-        assert labels.max().item() <self.n_classes, f"Label value {labels.max().item()} exceeds num_classes={self.n_classes}"
         one_hot.scatter_(1, labels.view(-1, 1), 1)
         
         # Select and scale
@@ -134,9 +133,6 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=10, pre
         progress_bar = tqdm(train_loader, desc=f"Epoch {epoch}/{epochs}", leave=False)
         
         for inputs, labels in progress_bar:
-            # batch_size = inputs.shape[0]  # get batch size from the first dimension
-            # print(f"Current batch size: {batch_size}")
-
             inputs, labels = inputs.to(device), labels.to(device)
             optimizer.zero_grad()
             outputs = model(inputs)
@@ -165,12 +161,6 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=10, pre
         with torch.no_grad():
             for inputs, labels in tqdm(val_loader, desc="Validating", unit="batch"):
                 inputs, labels = inputs.to(device), labels.to(device)
-                
-                # Debug: Check label range
-                if labels.min().item() < 0 or labels.max().item() >= 1211:
-                    print(f"🚨 Invalid labels found! Min: {labels.min().item()}, Max: {labels.max().item()}")
-                    print(f"Batch labels: {labels.cpu().numpy()}")
-                    raise ValueError("Validation labels out of range!")
                 
                 outputs = model(inputs)
                 loss = criterion(outputs, labels)

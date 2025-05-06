@@ -81,7 +81,6 @@ class ResNet(nn.Module):
 
 class Res2Net(nn.Module):
     def __init__(self, block, layers, baseWidth=26, scale=4, m=0.35, num_classes=10, loss='AAMSoftmaxLoss', dropblock_prob=0.1,  **kwargs):
-        # print(num_classes)
         self.inplanes = 16
         super(Res2Net, self).__init__()
         self.loss = loss
@@ -108,9 +107,6 @@ class Res2Net(nn.Module):
             self.embedding_dim = 512
             self.projection = Projection(2*128*block.expansion, self.embedding_dim)
             self.weight = nn.Parameter(torch.FloatTensor(num_classes, self.embedding_dim))
-            # want to print model weight shape
-            print('weight shape: ', self.weight.shape)
-            nn.init.kaiming_normal_(self.weight, mode='fan_out', nonlinearity='relu')
         else:
             raise NotImplementedError
 
@@ -186,11 +182,11 @@ class Res2Net(nn.Module):
         # print('flatten stat: ', x.size())
         # x = self.cls_layer(x)
         embeddings = self.projection(x)
-        if self.training:
-            cosine_sim = F.linear(embeddings, F.normalize(self.weight, p=2, dim=1))
-            return cosine_sim
-        else:
-            return embeddings
+        # if self.training:
+        cosine_sim = F.linear(embeddings, F.normalize(self.weight, p=2, dim=1))
+        return cosine_sim
+        # else:
+            # return embeddings
 
 
         # return F.log_softmax(x, dim=-1)
