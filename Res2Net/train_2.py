@@ -94,7 +94,7 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=10, pre
     no_improve_epochs = 0
     model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
-    scheduler = CosineAnnealingLR(optimizer, T_max=T_MAX, eta_min=1e-6)
+    scheduler = CosineAnnealingLR(optimizer, T_max=T_MAX, eta_min=1e-7)
 
     if pretrained:
         checkpoint_files = glob.glob(os.path.join(checkpoint_dir, "model_epoch_*.pth"))
@@ -110,7 +110,7 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=10, pre
             # best_val_accuracy = checkpoint['best_val_accuracy']
             val_accuracy = checkpoint['val_accuracy']
             best_val_loss = checkpoint['best_val_loss']
-            start_epoch = checkpoint.get('epoch', 1)
+            start_epoch = checkpoint.get('epoch', 1) + 1
             print(f"Resuming training from epoch {start_epoch} with val_loss: {best_val_loss:.4f}",
               f"val_accuracy: {val_accuracy:.2f}%" )
         else:
@@ -237,13 +237,13 @@ full_train_dataset = MFCCDataset(train_mfcc_files, train_spkid_files)
 full_val_dataset = MFCCDataset(val_mfcc_files, val_spkid_files)
 
 # Create DataLoaders
-train_loader = DataLoader(full_train_dataset, batch_size=30, shuffle=True)
-val_loader = DataLoader(full_val_dataset, batch_size=30, shuffle=False)
+train_loader = DataLoader(full_train_dataset, batch_size=64, shuffle=True)
+val_loader = DataLoader(full_val_dataset, batch_size=64, shuffle=False)
 
 device = torch.device("cuda")
-model = se_res2net50_v1b(num_classes=1211,dropblock_prob=0.2)
+model = se_res2net50_v1b(num_classes=1211,dropblock_prob=0.3)
 
-epochs = 100
+epochs = 150
 patience = 10
 pretrained = True
 
