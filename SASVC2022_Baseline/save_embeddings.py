@@ -10,11 +10,8 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from aasist.data_utils import Dataset_ASVspoof2019_devNeval
-from aasist.models.AASIST import Model as AASISTModel
-from ECAPATDNN.model import ECAPA_TDNN
 from utils import load_parameters
 import speechbrain as sb
-
 import sys
 
 # Add the Res2Net directory to the Python path
@@ -52,6 +49,40 @@ SET_TRN = {
         "./LA/ASVspoof2019_LA_asv_protocols/ASVspoof2019.LA.asv.eval.male.trn.txt",
     ],
 }
+
+# class ReferenceEncoderWrapper:
+#     def __init__(self, checkpoint_path):
+#         tf.reset_default_graph()
+#         self.graph = tf.Graph()
+#         self.session = tf.Session(graph=self.graph)
+
+#         with self.graph.as_default():
+#             self.mel_input = tf.placeholder(dtype=tf.float32, shape=[1, None, 80, 1], name="mel_input")
+#             self.embedding = reference_encoder(self.mel_input, is_training=False)
+
+#             # Restore checkpoint
+#             vars_to_restore = tf.global_variables()
+#             reader = tf.train.NewCheckpointReader(checkpoint_path)
+#             available_vars = reader.get_variable_to_shape_map()
+
+#             assignment_map = {}
+#             for var in vars_to_restore:
+#                 var_name = var.name.split(':')[0]
+#                 if var_name in available_vars:
+#                     assignment_map[var_name] = var
+#             tf.train.init_from_checkpoint(checkpoint_path, assignment_map)
+
+#             self.session.run(tf.global_variables_initializer())
+
+#     def extract_embedding(self, mel):
+#         # mel: [T, 80]
+#         if mel.shape[1] < 80:
+#             mel = np.pad(mel, ((0, 0), (0, 80 - mel.shape[1])), mode='constant')
+#         elif mel.shape[1] > 80:
+#             mel = mel[:, :80]
+
+#         mel_4d = mel.reshape(1, mel.shape[0], mel.shape[1], 1)
+#         return self.session.run(self.embedding, feed_dict={self.mel_input: mel_4d})
 
 
 def save_embeddings(
@@ -193,12 +224,11 @@ def main():
     # cm_embd_ext.to(device)
     # cm_embd_ext.eval()
     # Define the model architecture (e.g., ECAPA-TDNN)
-    asv_embd_ext = ECAPA_TDNN(C=1024)  # Adjust the parameters as needed
 
     # Load the state_dict into the model
     asv_embd_ext = se_res2net50_v1b(num_classes=3)
     state_dict = torch.load("../best_model.pth", map_location=device)
-    asv_embd_ext.load_state_dict(state_dict)
+    asv_embd_ext.load_state_dict(state_dict, strict=False)
     # asv_embd_ext = ECAPA_TDNN(C=1024)
     # load_parameters(asv_embd_ext.state_dict(), args.ecapa_weight)
     asv_embd_ext.to(device)

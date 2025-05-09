@@ -1,0 +1,2 @@
+model_checkpoint_path: "ref_encoder_updated.ckpt"
+all_model_checkpoint_paths: "ref_encoder_updated.ckpt"

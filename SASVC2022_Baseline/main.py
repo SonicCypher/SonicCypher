@@ -7,6 +7,8 @@ from shutil import copy
 
 import pytorch_lightning as pl
 from omegaconf import OmegaConf
+from pytorch_lightning.callbacks import ModelCheckpoint
+
 
 from utils import *
 
@@ -48,19 +50,20 @@ def main(args):
             flush_logs_every_n_steps=config.progbar_refresh * 100,
         ),
     ]
+    
 
     callbacks = [
-        pl.callbacks.ModelSummary(max_depth=3),
-        pl.callbacks.LearningRateMonitor(logging_interval="step"),
-        pl.callbacks.ModelCheckpoint(
-            dirpath=model_save_path,
-            filename="{epoch}-{sasv_eer_dev:.5f}",
-            monitor="sasv_eer_dev",
-            mode="min",
-            every_n_epochs=config.val_interval_epoch,
-            save_top_k=config.save_top_k,
-        ),
-    ]
+    pl.callbacks.ModelSummary(max_depth=3),
+    pl.callbacks.LearningRateMonitor(logging_interval="step"),
+    pl.callbacks.ModelCheckpoint(
+        dirpath=model_save_path,
+        filename="{epoch}-{sasv_eer_dev:.5f}",  # Save checkpoints with epoch and metric
+        monitor="sasv_eer_dev",
+        mode="min",
+        every_n_epochs=config.val_interval_epoch,
+        save_top_k=config.save_top_k,
+    ),
+]
 
     # Train / Evaluate
     gpus = find_gpus(config.ngpus, min_req_mem=config.min_req_mem)

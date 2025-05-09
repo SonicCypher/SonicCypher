@@ -46,28 +46,60 @@ class System(pl.LightningModule):
 
         return loss
 
+    # def validation_step(self, batch, batch_idx, dataloader_idx=-1):
+    #     embd_asv_enrol, embd_asv_test, embd_cm_test, key = batch
+    #     pred = self.model(embd_asv_enrol, embd_asv_test, embd_cm_test)
+    #     pred = torch.softmax(pred, dim=-1)
+
+    #     return {"pred": pred, "key": key}
+
+    # def validation_epoch_end(self, outputs):
+    #     log_dict = {}
+    #     preds, keys = [], []
+    #     for output in outputs:
+    #         preds.append(output["pred"])
+    #         keys.extend(list(output["key"]))
+
+    #     preds = torch.cat(preds, dim=0)[:, 1].detach().cpu().numpy()
+    #     sasv_eer, sv_eer, spf_eer = get_all_EERs(preds=preds, keys=keys)
+
+    #     log_dict["sasv_eer_dev"] = sasv_eer
+    #     log_dict["sv_eer_dev"] = sv_eer
+    #     log_dict["spf_eer_dev"] = spf_eer
+
+    #     self.log_dict(log_dict)
+
     def validation_step(self, batch, batch_idx, dataloader_idx=-1):
         embd_asv_enrol, embd_asv_test, embd_cm_test, key = batch
         pred = self.model(embd_asv_enrol, embd_asv_test, embd_cm_test)
         pred = torch.softmax(pred, dim=-1)
 
+        # Store predictions and keys for later use
+        if not hasattr(self, "validation_outputs"):
+            self.validation_outputs = {"preds": [], "keys": []}
+        self.validation_outputs["preds"].append(pred)
+        self.validation_outputs["keys"].extend(key)
+
         return {"pred": pred, "key": key}
 
-    def validation_epoch_end(self, outputs):
-        log_dict = {}
-        preds, keys = [], []
-        for output in outputs:
-            preds.append(output["pred"])
-            keys.extend(list(output["key"]))
+    def on_validation_epoch_end(self):
+        # Process stored outputs
+        preds = torch.cat(self.validation_outputs["preds"], dim=0)[:, 1].detach().cpu().numpy()
+        keys = self.validation_outputs["keys"]
 
-        preds = torch.cat(preds, dim=0)[:, 1].detach().cpu().numpy()
+        # Compute EERs
         sasv_eer, sv_eer, spf_eer = get_all_EERs(preds=preds, keys=keys)
 
-        log_dict["sasv_eer_dev"] = sasv_eer
-        log_dict["sv_eer_dev"] = sv_eer
-        log_dict["spf_eer_dev"] = spf_eer
-
+        # Log results
+        log_dict = {
+            "sasv_eer_dev": sasv_eer,
+            "sv_eer_dev": sv_eer,
+            "spf_eer_dev": spf_eer,
+        }
         self.log_dict(log_dict)
+
+        # Clear stored outputs
+        self.validation_outputs = None
 
     def test_step(self, batch, batch_idx, dataloader_idx=-1):
         res_dict = self.validation_step(batch, batch_idx, dataloader_idx=dataloader_idx)
