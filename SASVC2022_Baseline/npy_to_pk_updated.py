@@ -20,6 +20,11 @@ def convert_cm_npy_to_pk(npy_dir, output_path):
             # Update the progress bar
             pbar.update(1)
 
+    
+    # Ensure the output directory exists
+    output_dir = os.path.dirname(output_path)
+    os.makedirs(output_dir, exist_ok=True)
+
     # Save the dictionary as a pickle file
     with open(output_path, "wb") as f:
         pk.dump(cm_emb_dic, f)
