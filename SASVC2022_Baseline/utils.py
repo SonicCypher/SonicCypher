@@ -84,35 +84,36 @@ def load_parameters(trg_state, path):
         trg_state[name].copy_(param)
 
 
-def find_gpus(nums=4, min_req_mem=None) -> str:
+def find_gpus(nums=4) -> str:
     """
     Allocates 'nums' GPUs that have the most free memory.
     Original source:
     https://discuss.pytorch.org/t/it-there-anyway-to-let-program-select-free-gpu-automatically/17560/10
 
     :param nums: number of GPUs to find
-    :param min_req_mem: required GPU memory (in MB)
     :return: string of GPU indices separated with comma
     """
 
+    # Run nvidia-smi to get free memory for each GPU
     os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp_free_gpus')
     with open('tmp_free_gpus', 'r', encoding="utf-8") as lines_txt:
         frees = lines_txt.readlines()
-        idx_freememory_pair = [ (idx,int(x.split()[2]))
-                              for idx,x in enumerate(frees) ]
-    idx_freememory_pair.sort(key=lambda my_tuple:my_tuple[1],reverse=True)
-    using_gpus = [str(idx_memory_pair[0])
-                    for idx_memory_pair in idx_freememory_pair[:nums] ]
 
-    # return error signal if minimum required memory is given and
-    # at least one GPU does not have sufficient memory
-    if min_req_mem is not None and \
-        int(idx_freememory_pair[nums][1]) < min_req_mem:
+    # Parse GPU memory information
+    idx_freememory_pair = [(idx, int(x.split()[2])) for idx, x in enumerate(frees)]
+    idx_freememory_pair.sort(key=lambda my_tuple: my_tuple[1], reverse=True)
 
-        return -1
+    # Check if enough GPUs are available
+    if len(idx_freememory_pair) < nums:
+        raise RuntimeError(
+            f"Not enough GPUs available. Requested: {nums}, Available: {len(idx_freememory_pair)}"
+        )
 
-    using_gpus =  ','.join(using_gpus)
-    print('using GPU idx: #', using_gpus)
+    # Select the top 'nums' GPUs
+    using_gpus = [str(idx_memory_pair[0]) for idx_memory_pair in idx_freememory_pair[:nums]]
+    using_gpus = ','.join(using_gpus)
+
+    print('Using GPU idx: #', using_gpus)
     return using_gpus
 
 
