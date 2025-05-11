@@ -84,39 +84,48 @@ def load_parameters(trg_state, path):
         trg_state[name].copy_(param)
 
 
+import subprocess
+
 def find_gpus(nums=4) -> str:
     """
     Allocates 'nums' GPUs that have the most free memory.
-    Original source:
-    https://discuss.pytorch.org/t/it-there-anyway-to-let-program-select-free-gpu-automatically/17560/10
 
     :param nums: number of GPUs to find
     :return: string of GPU indices separated with comma
     """
-
-    # Run nvidia-smi to get free memory for each GPU
-    os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp_free_gpus')
-    with open('tmp_free_gpus', 'r', encoding="utf-8") as lines_txt:
-        frees = lines_txt.readlines()
-
-    # Parse GPU memory information
-    idx_freememory_pair = [(idx, int(x.split()[2])) for idx, x in enumerate(frees)]
-    idx_freememory_pair.sort(key=lambda my_tuple: my_tuple[1], reverse=True)
-
-    # Check if enough GPUs are available
-    if len(idx_freememory_pair) < nums:
-        raise RuntimeError(
-            f"Not enough GPUs available. Requested: {nums}, Available: {len(idx_freememory_pair)}"
+    try:
+        # Run nvidia-smi and capture the output
+        result = subprocess.run(
+            ['nvidia-smi', '--query-gpu=index,memory.free', '--format=csv,noheader,nounits'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding='utf-8'
         )
 
-    # Select the top 'nums' GPUs
-    using_gpus = [str(idx_memory_pair[0]) for idx_memory_pair in idx_freememory_pair[:nums]]
-    using_gpus = ','.join(using_gpus)
+        # Parse the output
+        lines = result.stdout.strip().split('\n')
+        idx_freememory_pair = [(int(line.split(',')[0]), int(line.split(',')[1])) for line in lines]
 
-    print('Using GPU idx: #', using_gpus)
-    return using_gpus
+        # Sort GPUs by free memory (descending order)
+        idx_freememory_pair.sort(key=lambda x: x[1], reverse=True)
 
+        # Check if enough GPUs are available
+        if len(idx_freememory_pair) < nums:
+            raise RuntimeError(
+                f"Not enough GPUs available. Requested: {nums}, Available: {len(idx_freememory_pair)}"
+            )
 
+        # Select the top 'nums' GPUs
+        using_gpus = [str(idx_memory_pair[0]) for idx_memory_pair in idx_freememory_pair[:nums]]
+        using_gpus = ','.join(using_gpus)
+
+        print('Using GPU idx: #', using_gpus)
+        return using_gpus
+
+    except Exception as e:
+        print(f"Error detecting GPUs: {e}")
+        raise RuntimeError("Failed to detect GPUs.")
+    
 def get_spkdic(cm_meta: str) -> Dict:
     l_cm_meta = open(cm_meta, "r").readlines()
 
