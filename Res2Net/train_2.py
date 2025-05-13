@@ -86,7 +86,7 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=10, pre
 
     writer = SummaryWriter(log_dir='runs/speaker_verification') 
     
-    T_MAX = 100  # Independent of total epochs
+    T_MAX = 150  # Independent of total epochs
     MIN_EPOCHS = 20  # Minimum epochs before early stopping can trigger
 
     # best_val_accuracy = 0
@@ -237,8 +237,8 @@ full_train_dataset = MFCCDataset(train_mfcc_files, train_spkid_files)
 full_val_dataset = MFCCDataset(val_mfcc_files, val_spkid_files)
 
 # Create DataLoaders
-train_loader = DataLoader(full_train_dataset, batch_size=64, shuffle=True)
-val_loader = DataLoader(full_val_dataset, batch_size=64, shuffle=False)
+train_loader = DataLoader(full_train_dataset, batch_size=30, shuffle=True)
+val_loader = DataLoader(full_val_dataset, batch_size=30, shuffle=False)
 
 device = torch.device("cuda")
 model = se_res2net50_v1b(num_classes=1211,dropblock_prob=0.3)
