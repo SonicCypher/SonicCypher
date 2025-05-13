@@ -3,8 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
-
-from models.resnet_blocks import BasicBlock, SEBasicBlock, Bottleneck, SEBottleneck, Bottle2neck, SEBottle2neck
+from .resnet_blocks import BasicBlock, SEBasicBlock, Bottleneck, SEBottleneck, Bottle2neck, SEBottle2neck
 
 class ResNet(nn.Module):
     """ basic ResNet class: https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py """

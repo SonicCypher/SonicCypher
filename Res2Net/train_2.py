@@ -11,7 +11,7 @@ import sys
 from tqdm import tqdm
 import glob
 from torch.utils.tensorboard import SummaryWriter
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from run_pipline import MFCC_Extraction
 import math
 

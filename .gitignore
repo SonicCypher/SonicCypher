@@ -3,7 +3,6 @@ __pycache__/
 Voxceleb/
 Model/output/
 Model/noise/
-
 .idea/
 
 **/_pycache_/
@@ -18,3 +17,4 @@ Sonic-data/
 voxceleb/
 runs/
 *.log
+*.txt

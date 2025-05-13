@@ -13,6 +13,7 @@ from speechbrain.utils.logger import get_logger
 from speechbrain.utils.metric_stats import EER, minDCF
 from torch.utils.data import DataLoader
 from models.resnet_models import se_res2net50_v1b
+from Preprocessing.ASVSpoof.prepare_ASV import prepare_ASV_verification
 from torch.nn.utils.rnn import pad_sequence
 
 
@@ -169,14 +170,12 @@ def dataio_prep():
 if __name__ == "__main__":
     # Logger setup
     logger = get_logger(__name__)
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    sys.path.append(os.path.dirname(current_dir))
+    # current_dir = os.path.dirname(os.path.abspath(__file__))
+    # sys.path.append(os.path.dirname(current_dir))
 
     run_opts = {
     "device": "cuda" if torch.cuda.is_available() else "cpu"
 }
-
-    from Preprocessing.ASVSpoof.prepare_ASV import prepare_ASV_verification
 
     data_folder ="/home/cse/SonicCypher/ASVSpoof2019"
     save_folder_csv = "./Preprocessing/ASVSpoof/output"
