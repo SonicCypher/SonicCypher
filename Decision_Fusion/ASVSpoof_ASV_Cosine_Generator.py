@@ -13,7 +13,7 @@ from Preprocessing.ASVSpoof_Eval.prepare_ASVSpoof_csv_file import prepare_ASV_ve
 
 
 # Compute embeddings from waveforms
-def compute_embedding(wavs):
+def compute_embedding(wavs,model):
     with torch.no_grad():
         lengths = [len(wav) for wav in wavs]
         max_length = max(lengths)
@@ -33,7 +33,7 @@ def compute_embedding(wavs):
     return embeddings
 
 # Enrollment: compute mean embedding per speaker
-def compute_mean_enrol_embeddings(data_loader):
+def compute_mean_enrol_embeddings(data_loader,model):
     speaker_embeddings = {}
 
     with torch.no_grad():
@@ -41,7 +41,7 @@ def compute_mean_enrol_embeddings(data_loader):
             wavs = batch["sig"].to(run_opts["device"])
             spk_ids = batch["spk_id"]
 
-            emb = compute_embedding(wavs).unsqueeze(1)
+            emb = compute_embedding(wavs,model).unsqueeze(1)
 
             for i, spk_id in enumerate(spk_ids):
                 if spk_id not in speaker_embeddings:
@@ -56,7 +56,7 @@ def compute_mean_enrol_embeddings(data_loader):
     return mean_embeddings
 
 # Test: compute per-utterance embeddings
-def compute_test_embeddings(data_loader):
+def compute_test_embeddings(data_loader,model):
     embedding_dict = {}
 
     with torch.no_grad():
@@ -72,7 +72,7 @@ def compute_test_embeddings(data_loader):
                 continue
             wavs = wavs.to(run_opts["device"])
 
-            emb = compute_embedding(wavs).unsqueeze(1)
+            emb = compute_embedding(wavs,model).unsqueeze(1)
         
             for i, seg_id in enumerate(seg_ids):
                 embedding_dict[seg_id] = emb[i].detach().clone()
@@ -89,7 +89,7 @@ def read_eval_file(eval_file_path):
             eval_entries.append((label, claimed_spk_id, test_utt_id))
     return eval_entries
 
-def compute_cosine_scores(eval_entries, enrol_dict, test_dict, output_path="/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output/cosine_scores.txt"):
+def compute_cosine_scores(eval_entries, enrol_dict, test_dict, output_path):
     with open(output_path, "w") as f:
         for label, spk_id, test_utt_id in eval_entries:
             if spk_id not in enrol_dict:
@@ -111,19 +111,48 @@ def compute_cosine_scores(eval_entries, enrol_dict, test_dict, output_path="/hom
             for i, score in enumerate(cosine_score):
                 text_utt_id = test_utt_id.split("/")[-1]
                 binary_result = 1 if score.item() > threshold else 0
-                f.write(f"{spk_id} {text_utt_id} _ {label} {binary_result}\n")
-                
-# Data loading and preparation
-def dataio_prep():
-    data_folder = "/home/hansini/Campus/FYP/LA/ASVspoof2019_LA_eval"
+                f.write(f"{spk_id} {text_utt_id} _ {label} {score.item():.4f} {binary_result}\n")
 
+
+def run_verification_pipeline(
+    data_folder,
+    save_folder_csv,
+    verification_pairs_file,
+    model_ckpt_path,
+    score_output_path,
+):
+    # Prepare CSV files from pair list
+    prepare_ASV_verification(data_folder, save_folder_csv, verification_pairs_file)
+
+    # Prepare dataloaders
+    enrol_dataloader, test_dataloader = dataio_prep(data_folder, save_folder_csv)
+
+    # Load model
+    model = se_res2net50_v1b(num_classes=1211)
+    last_best_model = torch.load(model_ckpt_path, map_location=run_opts["device"])
+    model.load_state_dict(last_best_model["model_state_dict"])
+    model.eval()
+    model.to(run_opts["device"])
+
+    # Compute embeddings
+    enrol_dict = compute_mean_enrol_embeddings(enrol_dataloader,model)
+    test_dict = compute_test_embeddings(test_dataloader,model)
+    eval_entries = read_eval_file(verification_pairs_file)
+
+    # Score and save
+    compute_cosine_scores(eval_entries, enrol_dict, test_dict, score_output_path)
+    print(f"Cosine scores saved to: {score_output_path}")
+
+
+# Data loading and preparation
+def dataio_prep(data_folder, save_folder_csv):
     enrol_data = sb.dataio.dataset.DynamicItemDataset.from_csv(
-        csv_path='/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output/enrol.csv',
+        csv_path=os.path.join(save_folder_csv, "enrol.csv"),
         replacements={"data_root": data_folder},
     ).filtered_sorted(sort_key="duration")
 
     test_data = sb.dataio.dataset.DynamicItemDataset.from_csv(
-        csv_path='/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output/test.csv',
+        csv_path=os.path.join(save_folder_csv, "test.csv"),
         replacements={"data_root": data_folder},
     ).filtered_sorted(sort_key="duration")
 
@@ -157,31 +186,28 @@ def dataio_prep():
 # Main execution
 if __name__ == "__main__":
     logger = get_logger(__name__)
-    # current_dir = os.path.dirname(os.path.abspath(__file__))
-    # sys.path.append(os.path.dirname(current_dir))
-
     run_opts = {
         "device": "cuda" if torch.cuda.is_available() else "cpu"
     }
 
-    data_folder = "/home/hansini/Campus/FYP/LA/ASVspoof2019_LA_eval"
-    save_folder_csv = "/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output"
-    verification_pairs_file = "/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Eval/verify_eval_gi.txt"
-    print("Preparing ASVspoof eval data csv files...")
+    saved_model_path = "/home/hansini/Campus/FYP/SonicCypher/Trained_Models/model_epoch_10.pth"
 
+    run_verification_pipeline(
+        data_folder="/home/hansini/Campus/FYP/LA/ASVspoof2019_LA_eval",
+        save_folder_csv="/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output/eval",
+        verification_pairs_file="/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Eval/verify_eval_gi.txt",
+        model_ckpt_path=saved_model_path,
+        score_output_path="/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output/cosine_scores_eval.txt"
+    )
+     
+    print("\n")
+    print("=======================================")
+    print("\n")
 
-    prepare_ASV_verification(data_folder, save_folder_csv, verification_pairs_file)
-
-    enrol_dataloader, test_dataloader = dataio_prep()
-
-    model = se_res2net50_v1b(num_classes=1211)
-    last_best_model = torch.load("/home/hansini/Campus/FYP/SonicCypher/Trained_Models/model_epoch_10.pth", map_location=run_opts["device"])
-    model.load_state_dict(last_best_model["model_state_dict"])
-    model.eval()
-    model.to(run_opts["device"])
-
-    enrol_dict = compute_mean_enrol_embeddings(enrol_dataloader)  # {spk_id: mean_embedding}
-    test_dict = compute_test_embeddings(test_dataloader)          # {utterance_id: embedding}
-    eval_entries = read_eval_file(verification_pairs_file)         # [(label, claimed_spk_id, test_utt_id)]
-    compute_cosine_scores(eval_entries, enrol_dict, test_dict)     # Save to file     
-    print("Cosine scores computed and saved to cosine_scores.txt")
+    run_verification_pipeline(
+        data_folder="/home/hansini/Campus/FYP/LA/ASVspoof2019_LA_dev",
+        save_folder_csv="/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output/dev",
+        verification_pairs_file="/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Eval/verify_dev_gi.txt",
+        model_ckpt_path=saved_model_path,
+        score_output_path="/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output/cosine_scores_dev.txt"
+    )

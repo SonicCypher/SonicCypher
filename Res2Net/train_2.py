@@ -12,7 +12,7 @@ from tqdm import tqdm
 import glob
 from torch.utils.tensorboard import SummaryWriter
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from run_pipline import MFCC_Extraction
+from ..run_pipline import MFCC_Extraction
 import math
 
 checkpoint_dir = "checkpoints"
