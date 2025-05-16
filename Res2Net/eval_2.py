@@ -13,6 +13,7 @@ from speechbrain.utils.logger import get_logger
 from speechbrain.utils.metric_stats import EER, minDCF
 from torch.utils.data import DataLoader
 from models.resnet_models import se_res2net50_v1b
+from Preprocessing.Voxceleb.prepare_voxceleb import prepare_voxceleb
 from torch.nn.utils.rnn import pad_sequence
 
 
@@ -131,13 +132,7 @@ def get_verification_scores(veri_test):
         # Compute the score for the given sentence
         score = similarity(enrol, test)[0]
 
-        # Perform score normalization
-        # if "score_norm" in params:
-        #     if params["score_norm"] == "z-norm":
-        #         score = (score - mean_e_c) / std_e_c
-        #     elif params["score_norm"] == "t-norm":
-        #         score = (score - mean_t_c) / std_t_c
-        #     elif params["score_norm"] == "s-norm":
+        # Normalization
         score_e = (score - mean_e_c) / std_e_c
         score_t = (score - mean_t_c) / std_t_c
         score = 0.5 * (score_e + score_t)
@@ -158,7 +153,6 @@ def get_verification_scores(veri_test):
 def dataio_prep():
     "Creates the dataloaders and their data processing pipelines."
 
-    # data_folder = r"/mnt/additional-volume/voxdata/vox1_dev_wav"
     data_folder ="/home/cse/SonicCypher/Speaker_Veri_Dataset/voxdata/vox1_dev_wav"
     # Train data (used for normalization)
     train_data = sb.dataio.dataset.DynamicItemDataset.from_csv(
@@ -222,87 +216,13 @@ def dataio_prep():
 
 if __name__ == "__main__":
     # Logger setup
-    logger = get_logger(__name__)
+    # logger = get_logger(__name__)
     current_dir = os.path.dirname(os.path.abspath(__file__))
     sys.path.append(os.path.dirname(current_dir))
 
     run_opts = {
     "device": "cuda" if torch.cuda.is_available() else "cpu"
 }
-
-
-    # # Load hyperparameters file with command-line overrides
-    # params_file, run_opts, overrides = sb.core.parse_arguments(sys.argv[1:])
-    # with open(params_file, encoding="utf-8") as fin:
-    #     params = load_hyperpyyaml(fin, overrides)
-
-    # # Download verification list (to exclude verification sentences from train)
-    # veri_file_path = os.path.join(
-    #     params["save_folder"], os.path.basename(params["verification_file"])
-    # )
-    # download_file(params["verification_file"], veri_file_path)
-
-    # from Preprocessing.Voxceleb.prepare_voxceleb import prepare_voxceleb
-
-    # # Create experiment directory
-    # sb.core.create_experiment_directory(
-    #     experiment_directory=params["output_folder"],
-    #     hyperparams_to_save=params_file,
-    #     overrides=overrides,
-    # )
-
-    # # Prepare data from dev of Voxceleb1
-    # prepare_voxceleb(
-    #     data_folder=params["data_folder"],
-    #     save_folder=params["save_folder"],
-    #     verification_pairs_file=veri_file_path,
-    #     splits=["train", "dev", "test"],
-    #     split_ratio=params["split_ratio"],
-    #     seg_dur=3.0,
-    #     skip_prep=params["skip_prep"],
-    #     source=(
-    #         params["voxceleb_source"] if "voxceleb_source" in params else None
-    #     ),
-    # )
-
-    # # here we create the datasets objects as well as tokenization and encoding
-    # train_dataloader, enrol_dataloader, test_dataloader = dataio_prep(params)
-
-    # # We download the pretrained LM from HuggingFace (or elsewhere depending on
-    # # the path given in the YAML file). The tokenizer is loaded at the same time.
-    # run_on_main(params["pretrainer"].collect_files)
-    # params["pretrainer"].load_collected()
-    # params["embedding_model"].eval()
-    # params["embedding_model"].to(run_opts["device"])
-
-    # # Computing  enrollment and test embeddings
-    # logger.info("Computing enroll/test embeddings...")
-
-    # # First run
-    # enrol_dict = compute_embedding_loop(enrol_dataloader)
-    # test_dict = compute_embedding_loop(test_dataloader)
-
-    # if "score_norm" in params:
-    #     train_dict = compute_embedding_loop(train_dataloader)
-
-    # # Compute the EER
-    # logger.info("Computing EER..")
-    # # Reading standard verification split
-    # with open(veri_file_path, encoding="utf-8") as f:
-    #     veri_test = [line.rstrip() for line in f]
-
-    # positive_scores, negative_scores = get_verification_scores(veri_test)
-    # del enrol_dict, test_dict
-
-    # eer, th = EER(torch.tensor(positive_scores), torch.tensor(negative_scores))
-    # logger.info("EER(%%)=%f", eer * 100)
-
-    # min_dcf, th = minDCF(
-    #     torch.tensor(positive_scores), torch.tensor(negative_scores)
-    # )
-    # logger.info("minDCF=%f", min_dcf * 100)
-
-    from Preprocessing.Voxceleb.prepare_voxceleb import prepare_voxceleb
 
     # data_folder = "/mnt/additional-volume/voxdata/vox1_dev_wav"
     data_folder ="/home/cse/SonicCypher/Speaker_Veri_Dataset/voxdata/vox1_dev_wav"
@@ -338,11 +258,11 @@ if __name__ == "__main__":
     del enrol_dict, test_dict
 
     eer, th = EER(torch.tensor(positive_scores), torch.tensor(negative_scores))
-    logger.info("EER(%%)=%f", eer * 100)
+    # logger.info("EER(%%)=%f", eer * 100)
     print("EER(%%)=%f", eer * 100)
 
     min_dcf, th = minDCF(
         torch.tensor(positive_scores), torch.tensor(negative_scores)
     )
-    logger.info("minDCF=%f", min_dcf * 100)
+    # logger.info("minDCF=%f", min_dcf * 100)
     print("minDCF=%f", min_dcf * 100)

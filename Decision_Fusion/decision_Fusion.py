@@ -1,3 +1,4 @@
+import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score, accuracy_score
@@ -9,11 +10,12 @@ def parse_result_file(file_path):
             if line.strip() == "":
                 continue
             parts = line.strip().split()
-            if len(parts) != 5:
+            if len(parts) != 6:
                 continue
-            spk, utt, _, label, decision = parts
+            spk, utt, _, label, _, decision = parts
             key = f"{spk}:{utt}"
             results[key] = (label, int(decision))
+    print(f"Parsed {len(results)} entries from {file_path}")
     return results
 
 def combine_results_and_decide(ASV_cosine_txt_path, prosody_cosine_txt_path):
@@ -28,6 +30,7 @@ def combine_results_and_decide(ASV_cosine_txt_path, prosody_cosine_txt_path):
         label2, decision2 = prosody_model[key]
         final_decision = decision1 & decision2
         combined.append((label1, final_decision))
+    print(f"Combined {len(combined)} entries from both models")
     return combined
 
 def compute_metrics(predictions, label_filter=None):
@@ -39,7 +42,7 @@ def compute_metrics(predictions, label_filter=None):
         true_label = 1 if label == "target" else 0
         y_true.append(true_label)
         y_pred.append(decision)
-
+    print(f"Filtered {len(y_true)} samples for labels: {label_filter}")
     cm = confusion_matrix(y_true, y_pred, labels=[1, 0])
     tp, fn = cm[0][0], cm[0][1] # True Positives – Correctly predicted target as target, False Negatives – Incorrectly predicted target as nontarget
     fp, tn = cm[1][0], cm[1][1] # False Positives – Incorrectly predicted nontarget as target, True Negatives – Correctly predicted nontarget as nontarget
@@ -108,12 +111,20 @@ def plot_all_dashboards(predictions, save_path=None):
 
 if __name__ == "__main__":
     # Paths to the model outputs
-    ASV_cosine_txt_path = "/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output/cosine_scores.txt"
+    ASV_cosine_txt_path = "/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output/cosine_scores_eval.txt"
     prosody_cosine_txt_path = "/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output/prosody_model_results.txt"
 
+    
     combined_predictions = combine_results_and_decide(ASV_cosine_txt_path, prosody_cosine_txt_path)
+    # 🔍 Inspect the labels to debug filtering issues
+    unique_labels = set(label for label, _ in combined_predictions)
+    print("Unique labels found:", unique_labels)
 
-    output_image_path = "/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output/fusion_dashboard.png"
+    # Path to save the output image
+    image_folder = "/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output/images"
+    os.makedirs(image_folder, exist_ok=True)  # Create folder if it doesn’t exist
+    # Save path for the output image
+    output_image_path = os.path.join(image_folder, "decision_fusion_dashboard.png")
 
     # Show unified dashboard
     plot_all_dashboards(combined_predictions, save_path=output_image_path)
