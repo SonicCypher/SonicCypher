@@ -58,7 +58,7 @@ def main(args: argparse.Namespace) -> None:
     dev_trial_path = (database_path /
                       "ASVspoof2019_{}_cm_protocols/{}.cm.dev.trl.txt".format(
                           track, prefix_2019))
-    eval_trial_path = "/home/cse/SonicCypher/aasist/data_files/cm/"
+    eval_trial_path = "/home/cse/SonicCypher/Hansini/SonicCypher/aasist/data_files/cm/tts_bonafide.txt"
 
     # define model related paths
     model_tag = "{}_{}_ep{}_bs{}".format(
@@ -234,10 +234,7 @@ def get_loader(
     dev_trial_path = (database_path /
                       "ASVspoof2019_{}_cm_protocols/{}.cm.dev.trl.txt".format(
                           track, prefix_2019))
-    eval_trial_path = (
-        database_path /
-        "ASVspoof2019_{}_cm_protocols/{}.cm.eval.trl.txt".format(
-            track, prefix_2019))
+    eval_trial_path = "/home/cse/SonicCypher/Hansini/SonicCypher/aasist/data_files/cm/tts_bonafide.txt"
 
     d_label_trn, file_train = genSpoof_list(dir_meta=trn_list_path,
                                             is_train=True,
