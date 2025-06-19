@@ -107,11 +107,11 @@ def compute_cosine_scores(eval_entries, enrol_dict, test_dict, output_path):
             emb_test = F.normalize(emb_test, dim=1)
 
             cosine_score = F.cosine_similarity(emb_enrol, emb_test,dim=1)
-            threshold = 0.67
+            # threshold = 0.67
             for i, score in enumerate(cosine_score):
                 text_utt_id = test_utt_id.split("/")[-1]
-                binary_result = 1 if score.item() > threshold else 0
-                f.write(f"{spk_id} {text_utt_id} _ {label} {score.item():.4f} {binary_result}\n")
+                # binary_result = 1 if score.item() > threshold else 0
+                f.write(f"{spk_id} {text_utt_id} _ {label} {score.item():.4f}\n")
 
 
 def run_verification_pipeline(
@@ -190,14 +190,14 @@ if __name__ == "__main__":
         "device": "cuda" if torch.cuda.is_available() else "cpu"
     }
 
-    saved_model_path = "/home/hansini/Campus/FYP/SonicCypher/Trained_Models/model_epoch_10.pth"
+    saved_model_path = "/home/hansini/Campus/FYP/SonicCypher/Trained_Models/model_epoch_148.pth"
 
     run_verification_pipeline(
         data_folder="/home/hansini/Campus/FYP/LA/ASVspoof2019_LA_eval",
-        save_folder_csv="/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output/eval",
+        save_folder_csv="/home/hansini/Campus/FYP/SonicCypher/Fusion/output/eval",
         verification_pairs_file="/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Eval/verify_eval_gi.txt",
         model_ckpt_path=saved_model_path,
-        score_output_path="/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output/cosine_scores_eval.txt"
+        score_output_path="/home/hansini/Campus/FYP/SonicCypher/Fusion/output/cosine_scores_eval.txt"
     )
      
     print("\n")
@@ -206,8 +206,8 @@ if __name__ == "__main__":
 
     run_verification_pipeline(
         data_folder="/home/hansini/Campus/FYP/LA/ASVspoof2019_LA_dev",
-        save_folder_csv="/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output/dev",
+        save_folder_csv="/home/hansini/Campus/FYP/SonicCypher/Fusion/output/dev",
         verification_pairs_file="/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Eval/verify_dev_gi.txt",
         model_ckpt_path=saved_model_path,
-        score_output_path="/home/hansini/Campus/FYP/SonicCypher/Decision_Fusion/output/cosine_scores_dev.txt"
+        score_output_path="/home/hansini/Campus/FYP/SonicCypher/Fusion/output/cosine_scores_dev.txt"
     )

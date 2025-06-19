@@ -18,3 +18,9 @@ voxceleb/
 runs/
 *.log
 *.txt
+# Except in the allowed-folder/
+!Fusion/
+!Fusion/output/
+!Fusion/output/*.txt
+
+

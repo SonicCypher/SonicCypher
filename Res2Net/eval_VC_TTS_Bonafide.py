@@ -126,7 +126,7 @@ def compute_cosine_scores(eval_entries, enrol_dict, test_dict, score_output_path
 
             # print(f"[DEBUG] enrol: {emb_enrol.shape}, test: {emb_test.shape}")
             score = F.cosine_similarity(emb_enrol, emb_test,dim=1)
-            binary_label = 1 if label == "target" else 0
+            binary_label = 1 if label == "bonafide" else 0
 
             labels.append(binary_label)
             scores.append(score.cpu().item())
@@ -198,7 +198,8 @@ if __name__ == "__main__":
     model_ckpt = "/home/hansini/Campus/FYP/SonicCypher/Trained_Models/model_epoch_148.pth"
     root_folder = "/home/hansini/Campus/FYP/LA/ASVspoof2019_LA_eval"
     output_dir = "/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/output"
-
+    print("\n=======================================\n")
+    print("VC")
     run_verification_pipeline(
         data_folder=root_folder,
         save_folder_csv="/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/output/vc",
@@ -208,6 +209,7 @@ if __name__ == "__main__":
     )
 
     print("\n=======================================\n")
+    print("TTS")
 
     run_verification_pipeline(
         data_folder=root_folder,
@@ -218,11 +220,12 @@ if __name__ == "__main__":
     )
 
     print("\n=======================================\n")
+    print("All")
 
     run_verification_pipeline(
         data_folder=root_folder,
-        save_folder_csv="/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/output/bonafide",
-        verification_pairs_file="/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/verify_bonafide_eval_gi.txt",
+        save_folder_csv="/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/output/All",
+        verification_pairs_file="/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/verify_All_eval_gi.txt",
         model_ckpt_path=model_ckpt,
-        score_output_path=f"{output_dir}/cosine_scores_bonafide.txt"
+        score_output_path=f"{output_dir}/cosine_scores_All.txt"
     )

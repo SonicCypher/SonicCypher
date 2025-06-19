@@ -19,7 +19,7 @@ def parse_trial_file(trial_path, enroll_dict):
             parts = line.strip().split()
             speaker_id = parts[0]
             test_utt_id = parts[1]
-            key = parts[3]  # target/nontarget/spoof
+            key = parts[4]  # bonafide/spoofed
 
             if speaker_id in enroll_dict:
                 enrollment_utts = enroll_dict[speaker_id]
@@ -31,19 +31,19 @@ def parse_trial_file(trial_path, enroll_dict):
     return output_lines
 
 # VC files
-female_trn_vc = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/VC/vc_enrol_female.txt'
-male_trn_vc = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/VC/vc_enrol_male.txt'
-gi_trl_vc = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/VC/vc.txt'
+female_trn_vc = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/VC/vc_enrol_female_filtered.txt'
+male_trn_vc = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/VC/vc_enrol_male_filtered.txt'
+gi_trl_vc = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/VC/vc_bonafide_filtered.txt'
 
 # TTS files
-female_trn_tts = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/TTS/tts_enrol_female.txt'
-male_trn_tts = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/TTS/tts_enrol_male.txt'
-gi_trl_tts = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/TTS/tts.txt'
+female_trn_tts = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/TTS/tts_enrol_female_filtered.txt'
+male_trn_tts = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/TTS/tts_enrol_male_filtered.txt'
+gi_trl_tts = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/TTS/tts_bonafide_filtered.txt'
 
-# Bonafide files
-female_trn_sasv = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/Bonafide/bonafide_enrol_female.txt'
-male_trn_sasv = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/Bonafide/bonafide_enrol_male.txt'
-gi_trl_sasv = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/Bonafide/bonafide.txt'
+#All files
+female_trn_sasv = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/All/all_enrol_female.txt'
+male_trn_sasv = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/All/all_enrol_male.txt'
+gi_trl_sasv = '/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/All/ASVspoof2019.LA.cm.eval.trl_filtered.txt'
 
 
 
@@ -87,13 +87,13 @@ enroll_data_sasv = parse_enrollment_file([female_trn_sasv,male_trn_sasv])
 verify_like_data_sasv = parse_trial_file(gi_trl_sasv, enroll_data_sasv)
 
 # Check if the file already exists
-if os.path.exists('/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/verify_bonafide_eval_gi.txt'):
+if os.path.exists('/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/verify_All_eval_gi.txt'):
     print("File already exists. Exiting.")
     exit()
 else:
     print("File does not exist. Creating new file.")
     # Step 3: Write to file
-    with open('/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/verify_bonafide_eval_gi.txt', 'w') as f:
+    with open('/home/hansini/Campus/FYP/SonicCypher/Preprocessing/ASVSpoof_Final/verify_All_eval_gi.txt', 'w') as f:
         for line in verify_like_data_sasv:
             f.write(line + '\n')
         print("Verify bonafide eval file created successfully.")
