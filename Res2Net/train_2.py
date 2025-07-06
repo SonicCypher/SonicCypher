@@ -11,13 +11,17 @@ import sys
 from tqdm import tqdm
 import glob
 from torch.utils.tensorboard import SummaryWriter
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from run_pipline import MFCC_Extraction
+import math
 
 checkpoint_dir = "checkpoints"
 
 if not os.path.exists(checkpoint_dir):
     os.makedirs(checkpoint_dir)
+
+num_classes = 1211  # Based on your VoxCeleb dataset
+embedding_dim = 512  # Must match the dimension in your projection layer
 
 class MFCCDataset(Dataset):
     def __init__(self, mfcc_files, spkid_files):
@@ -36,23 +40,61 @@ class MFCCDataset(Dataset):
       """
       mfcc_data = np.load(self.mfcc_files[idx])
       spkid_data = np.load(self.spkid_files[idx])
+
+      mfcc_id = os.path.basename(self.mfcc_files[idx]).replace("mfcc_", "")
+      spkid_id = os.path.basename(self.spkid_files[idx]).replace("spkid_", "")
+
+      if mfcc_id != spkid_id:
+        raise ValueError(f"MFCC file {self.mfcc_files[idx]} does not match speaker ID file {self.spkid_files[idx]}")
+
       # Add channel dimension to mfcc_data
       mfcc_data = np.expand_dims(mfcc_data, axis=0)
       # Ensure spkid_data is 1D (flatten if necessary)
       spkid_data = np.squeeze(spkid_data)
       return torch.tensor(mfcc_data, dtype=torch.float32), torch.tensor(spkid_data, dtype=torch.long)
 
+class AAMSoftmaxLoss(nn.Module):
+    def __init__(self,n_classes,embedding_dim, margin=0.2, scale=30):
+        super(AAMSoftmaxLoss, self).__init__()
+        self.n_classes = n_classes
+        self.embedding_dim = embedding_dim
+        self.margin = margin
+        self.scale = scale
+        self.cos_m = math.cos(margin)
+        self.sin_m = math.sin(margin)
+        self.th = math.cos(math.pi - margin)
+        self.mm = math.sin(math.pi - margin) * margin
 
-def train_model(model,train_loader, val_loader, epochs, device, patience=12, pretrained=False):
+    def forward(self, cosine, labels):
+        sine = torch.sqrt((1.0 - torch.pow(cosine, 2)).clamp(0, 1))
+        phi = cosine * self.cos_m - sine * self.sin_m  # cos(θ+m)
+        
+        # For numerical stability
+        phi = torch.where(cosine > self.th, phi, cosine - self.mm)
+        
+        # Convert one-hot
+        one_hot = torch.zeros_like(cosine)
+        one_hot.scatter_(1, labels.view(-1, 1), 1)
+        
+        # Select and scale
+        output = (one_hot * phi) + ((1.0 - one_hot) * cosine)
+        output = output * self.scale
+        
+        return nn.CrossEntropyLoss()(output, labels)
+
+def train_model(model,train_loader, val_loader, epochs, device, patience=10, pretrained=False):
 
     writer = SummaryWriter(log_dir='runs/speaker_verification') 
+    
+    T_MAX = 150  # Independent of total epochs
+    MIN_EPOCHS = 20  # Minimum epochs before early stopping can trigger
 
+    # best_val_accuracy = 0
+    best_val_loss = float('inf')
     no_improve_epochs = 0
     model.to(device)
-    optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
-    scheduler = CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-4)
-    
-    loadedFromCheckpoint = False
+    optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
+    scheduler = CosineAnnealingLR(optimizer, T_max=T_MAX, eta_min=1e-7)
 
     if pretrained:
         checkpoint_files = glob.glob(os.path.join(checkpoint_dir, "model_epoch_*.pth"))
@@ -64,12 +106,13 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
             model.load_state_dict(checkpoint['model_state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+            # val_loss = checkpoint['val_loss']
+            # best_val_accuracy = checkpoint['best_val_accuracy']
             val_accuracy = checkpoint['val_accuracy']
             best_val_loss = checkpoint['best_val_loss']
-            start_epoch = checkpoint.get('epoch', 1)
-            loadedFromCheckpoint = True
+            start_epoch = checkpoint.get('epoch', 1) + 1
             print(f"Resuming training from epoch {start_epoch} with val_loss: {best_val_loss:.4f}",
-              f"best_val_accuracy: {val_accuracy:.2f}%" )
+              f"val_accuracy: {val_accuracy:.2f}%" )
         else:
             print("No pretrained model found, training from scratch.")
             start_epoch = 1 
@@ -80,10 +123,8 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
         best_val_loss = float('inf')
 
     model.to(device)
-    criterion = nn.CrossEntropyLoss()
-    
-    if loadedFromCheckpoint:
-        start_epoch += 1
+    # criterion = nn.CrossEntropyLoss()
+    criterion = AAMSoftmaxLoss(n_classes=num_classes,embedding_dim=embedding_dim,margin=0.2, scale=30)
 
     for epoch in range(start_epoch,epochs+1):
         # Training phase
@@ -122,8 +163,7 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
         with torch.no_grad():
             for inputs, labels in tqdm(val_loader, desc="Validating", unit="batch"):
                 inputs, labels = inputs.to(device), labels.to(device)
-                # print labels
-                # print(labels)
+                
                 outputs = model(inputs)
                 loss = criterion(outputs, labels)
                 # print(f"Validation Loss large: {loss.item():.4f}")
@@ -137,6 +177,8 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
                 
         print(f"validation loss not divided by len: {val_loss:.4f} and len of loader: {len(val_loader):.4f}")
         val_accuracy = 100.0 * correct / total
+        current_val_loss = val_loss / len(val_loader)
+        print(f"length of val_loader: {len(val_loader)}")
         print(f"Validation Loss: {val_loss/len(val_loader):.4f}, Validation Accuracy: {val_accuracy:.2f}%")
 
         # Log metrics to TensorBoard
@@ -147,12 +189,10 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
         writer.add_scalar('Validation Accuracy', val_accuracy, epoch)
 
         # Early stopping
-        current_val_loss = val_loss/len(val_loader)
-
         if current_val_loss < best_val_loss:
             best_val_loss = current_val_loss
             no_improve_epochs = 0
-
+            
         # if val_accuracy > best_val_accuracy:
         #     best_val_accuracy = val_accuracy
         #     no_improve_epochs = 0
@@ -168,12 +208,13 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=12, pre
             }
             save_path = os.path.join(checkpoint_dir, f"model_epoch_{epoch}.pth")
             torch.save(checkpoint, save_path)
-            print(f"Model saved at {save_path} with validation accuracy: {val_accuracy:.2f}% and best validation loss: {best_val_loss:.4f}")
+            print(f"Model saved at {save_path} with validation accuracy: {val_accuracy:.2f}% and validation loss: {best_val_loss:.4f}")
 
         else:
             no_improve_epochs += 1
 
-        if no_improve_epochs >= patience:
+        early_stop = (epoch > MIN_EPOCHS) and (no_improve_epochs >= patience)
+        if early_stop:
             print("Early stopping triggered.")
             break
         print(f"{epoch} epochs is done.")
@@ -202,13 +243,13 @@ full_train_dataset = MFCCDataset(train_mfcc_files, train_spkid_files)
 full_val_dataset = MFCCDataset(val_mfcc_files, val_spkid_files)
 
 # Create DataLoaders
-train_loader = DataLoader(full_train_dataset, batch_size=15, shuffle=False)
-val_loader = DataLoader(full_val_dataset, batch_size=15, shuffle=False)
+train_loader = DataLoader(full_train_dataset, batch_size=30, shuffle=True)
+val_loader = DataLoader(full_val_dataset, batch_size=30, shuffle=False)
 
 device = torch.device("cuda")
-model = se_res2net50_v1b(dropblock_prob=0.1, num_classes=1211)
+model = se_res2net50_v1b(num_classes=1211,dropblock_prob=0.3)
 
-epochs = 100
+epochs = 150
 patience = 10
 pretrained = True
 

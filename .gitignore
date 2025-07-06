@@ -3,7 +3,6 @@ __pycache__/
 Voxceleb/
 Model/output/
 Model/noise/
-
 .idea/
 
 **/_pycache_/
@@ -16,7 +15,12 @@ noise_csv/
 output/
 Sonic-data/
 voxceleb/
-
 runs/
+*.log
 *.txt
+# Except in the allowed-folder/
+!Fusion/
+!Fusion/output/
+!Fusion/output/*.txt
+
 

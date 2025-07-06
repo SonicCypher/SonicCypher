@@ -7,13 +7,11 @@ from hyperpyyaml import load_hyperpyyaml
 from tqdm.contrib import tqdm
 
 import speechbrain as sb
-from speechbrain.utils.data_utils import download_file
-from speechbrain.utils.distributed import run_on_main
 from speechbrain.utils.logger import get_logger
 from speechbrain.utils.metric_stats import EER, minDCF
 from torch.utils.data import DataLoader
 from models.resnet_models import se_res2net50_v1b
-from Preprocessing.Voxceleb.prepare_voxceleb import prepare_voxceleb
+from Preprocessing.ASVSpoof.prepare_ASV import prepare_ASV_verification
 from torch.nn.utils.rnn import pad_sequence
 
 
@@ -90,52 +88,15 @@ def get_verification_scores(veri_test):
     # Cosine similarity initialization
     similarity = torch.nn.CosineSimilarity(dim=-1, eps=1e-6)
 
-    # creating cohort for score normalization
-    # if "score_norm" in params:
-    train_cohort = torch.stack(list(train_dict.values()))
-
     for i, line in enumerate(veri_test):
-        # Reading verification file (enrol_file test_file label)
         lab_pair = int(line.split(" ")[0].rstrip().split(".")[0].strip())
         enrol_id = line.split(" ")[1].rstrip().split(".")[0].strip()
         test_id = line.split(" ")[2].rstrip().split(".")[0].strip()
         enrol = enrol_dict[enrol_id]
         test = test_dict[test_id]
 
-        # if "score_norm" in params:
-        # Getting norm stats for enrol impostors
-        enrol_rep = enrol.repeat(train_cohort.shape[0], 1, 1)
-        score_e_c = similarity(enrol_rep, train_cohort)
-
-        num_cohort_samples = train_cohort.shape[0]
-        k = min(20000, num_cohort_samples)
-        score_e_c = torch.topk(
-             score_e_c, k=k, dim=0
-         )[0]
-
-        mean_e_c = torch.mean(score_e_c, dim=0)
-        std_e_c = torch.std(score_e_c, dim=0)
-
-        # Getting norm stats for test impostors
-        test_rep = test.repeat(train_cohort.shape[0], 1, 1)
-        score_t_c = similarity(test_rep, train_cohort)
-
-        # if "cohort_size" in params:
-        score_t_c = torch.topk(
-            # score_t_c, k=params["cohort_size"], dim=0
-            score_t_c, k=k, dim=0
-         )[0]
-
-        mean_t_c = torch.mean(score_t_c, dim=0)
-        std_t_c = torch.std(score_t_c, dim=0)
-
         # Compute the score for the given sentence
         score = similarity(enrol, test)[0]
-
-        # Normalization
-        score_e = (score - mean_e_c) / std_e_c
-        score_t = (score - mean_t_c) / std_t_c
-        score = 0.5 * (score_e + score_t)
 
         # write score file
         s_file.write("%s %s %i %f\n" % (enrol_id, test_id, lab_pair, score))
@@ -153,31 +114,23 @@ def get_verification_scores(veri_test):
 def dataio_prep():
     "Creates the dataloaders and their data processing pipelines."
 
-    data_folder ="/home/cse/SonicCypher/Speaker_Veri_Dataset/voxdata/vox1_dev_wav"
-    # Train data (used for normalization)
-    train_data = sb.dataio.dataset.DynamicItemDataset.from_csv(
-        csv_path='./Preprocessing/Voxceleb/output/train.csv',
-        replacements={"data_root": data_folder},
-    )
-    train_data = train_data.filtered_sorted(
-        sort_key="duration", select_n=400000
-    )
+    data_folder ="/home/cse/SonicCypher/ASVSpoof2019"
 
     # Enrol data
     enrol_data = sb.dataio.dataset.DynamicItemDataset.from_csv(
-        csv_path='./Preprocessing/Voxceleb/output/enrol.csv',
+        csv_path='./Preprocessing/ASVSpoof/output/enrol.csv',
         replacements={"data_root": data_folder},
     )
     enrol_data = enrol_data.filtered_sorted(sort_key="duration")
 
     # Test data
     test_data = sb.dataio.dataset.DynamicItemDataset.from_csv(
-        csv_path='./Preprocessing/Voxceleb/output/test.csv',
+        csv_path='./Preprocessing/ASVSpoof/output/test.csv',
         replacements={"data_root": data_folder},
     )
     test_data = test_data.filtered_sorted(sort_key="duration")
 
-    datasets = [train_data, enrol_data, test_data]
+    datasets = [enrol_data, test_data]
 
     # Define audio pipeline
     @sb.utils.data_pipeline.takes("wav", "start", "stop")
@@ -205,48 +158,40 @@ def dataio_prep():
 
 
     # Create dataloaders
-    train_dataloader = DataLoader(train_data, batch_size=8, shuffle=False, num_workers=10, collate_fn=collate_fn)
-
     enrol_dataloader = DataLoader(enrol_data, batch_size=8, shuffle=False, num_workers=10, collate_fn=collate_fn)
 
     test_dataloader = DataLoader(test_data, batch_size=8, shuffle=False, num_workers=10, collate_fn=collate_fn)
 
-    return train_dataloader, enrol_dataloader, test_dataloader
+    return enrol_dataloader, test_dataloader
 
 
 if __name__ == "__main__":
     # Logger setup
-    # logger = get_logger(__name__)
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    sys.path.append(os.path.dirname(current_dir))
+    logger = get_logger(__name__)
+    # current_dir = os.path.dirname(os.path.abspath(__file__))
+    # sys.path.append(os.path.dirname(current_dir))
 
     run_opts = {
     "device": "cuda" if torch.cuda.is_available() else "cpu"
 }
 
-    # data_folder = "/mnt/additional-volume/voxdata/vox1_dev_wav"
-    data_folder ="/home/cse/SonicCypher/Speaker_Veri_Dataset/voxdata/vox1_dev_wav"
-    save_folder_csv = "./Preprocessing/Voxceleb/output"
-    splits = ['train', 'dev','test']
-    split_ratio = [90, 10]
-    # verification_pairs_file = r"/mnt/additional-volume/voxdata/vox1_dev_wav/veri_test.txt"
-    verification_pairs_file = r"/home/cse/SonicCypher/Speaker_Veri_Dataset/voxceleb/meta/veri_test.txt"
+    data_folder ="/home/cse/SonicCypher/ASVSpoof2019"
+    save_folder_csv = "./Preprocessing/ASVSpoof/output"
+    verification_pairs_file = r"/home/cse/SonicCypher/ASVSpoof2019/test_file_alternated.txt"
     print("Preparing VoxCeleb data...")
 
-    prepare_voxceleb(data_folder,save_folder_csv, verification_pairs_file,splits,split_ratio)
+    prepare_ASV_verification(data_folder,save_folder_csv, verification_pairs_file)
 
-    train_dataloader, enrol_dataloader, test_dataloader = dataio_prep()
+    enrol_dataloader, test_dataloader = dataio_prep()
 
     model = se_res2net50_v1b(num_classes=1211)
-    # model.load_state_dict(torch.load("best_model.pth", map_location=run_opts["device"]))
-    last_best_model = torch.load("checkpoints/model_epoch_13.pth", map_location=run_opts["device"])
+    last_best_model = torch.load("checkpoints/model_epoch_31.pth", map_location=run_opts["device"])
     model.load_state_dict(last_best_model["model_state_dict"])
     model.eval()
     model.to(run_opts["device"]) 
 
     enrol_dict = compute_embedding_loop(enrol_dataloader)
     test_dict = compute_embedding_loop(test_dataloader)
-    train_dict = compute_embedding_loop(train_dataloader)
 
     # Compute the EER
     print("Computing EER..")
@@ -258,11 +203,9 @@ if __name__ == "__main__":
     del enrol_dict, test_dict
 
     eer, th = EER(torch.tensor(positive_scores), torch.tensor(negative_scores))
-    # logger.info("EER(%%)=%f", eer * 100)
     print("EER(%%)=%f", eer * 100)
 
     min_dcf, th = minDCF(
         torch.tensor(positive_scores), torch.tensor(negative_scores)
     )
-    # logger.info("minDCF=%f", min_dcf * 100)
     print("minDCF=%f", min_dcf * 100)

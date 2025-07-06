@@ -6,11 +6,8 @@ from tqdm import tqdm
 
 import torch
 import torchaudio
-from hyperpyyaml import load_hyperpyyaml
 
 import speechbrain as sb
-from speechbrain.utils.data_utils import download_file
-from speechbrain.utils.distributed import run_on_main
 from speechbrain.utils.data_utils import get_all_files
 from speechbrain.augment.preparation import prepare_csv
 from speechbrain.augment.time_domain import AddNoise
@@ -80,15 +77,14 @@ def dataio_prep(data_folder, save_folder, train_annotation, valid_annotation):
 def MFCC_extracter_train(data, device):
 
     # noise_folder = r"Model/noise/free-sound"
-    noise_folder = r"/home/cse/SonicCypher/Speaker_Veri_Dataset/noise/free-sound"
     # speech_folder = r"Model/noise/librivox"
+    noise_folder = r"/home/cse/SonicCypher/Speaker_Veri_Dataset/noise/free-sound"
     speech_folder = r"/home/cse/SonicCypher/Speaker_Veri_Dataset/noise/librivox"
 
     noise_filelist = get_all_files(noise_folder, match_and=['.wav'])
     speech_filelist = get_all_files(speech_folder, match_and=['.wav'])
 
-    noise_csv_folder = r"Model/noise_csv"
-    os.makedirs(noise_csv_folder, exist_ok=True) 
+    os.makedirs("Model/noise_csv", exist_ok=True)
 
     noise_csv = r"Model/noise_csv/noise.csv"
     speech_csv = r"Model/noise_csv/speech.csv"
@@ -123,7 +119,7 @@ def MFCC_extracter_train(data, device):
         augmentations=[add_noise, add_babble],
     )
 
-    feats = sb.lobes.features.MFCC(n_mfcc=80, n_mels=100, deltas=False, context=False)
+    feats = sb.lobes.features.MFCC(n_mfcc=24, n_mels=44, deltas=False, context=False)
 
     #Assuming you have defined your dataset
     train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=0, pin_memory=True)
@@ -186,7 +182,7 @@ def MFCC_extracter_train(data, device):
 
 def MFCC_extracter_valid(data, device):
         
-        feats = sb.lobes.features.MFCC(n_mfcc=80, n_mels=100, deltas=False, context=False)
+        feats = sb.lobes.features.MFCC(n_mfcc=24, n_mels=44, deltas=False, context=False)
 
         # Assuming you have defined your dataset
         train_dataloader = DataLoader(data, batch_size=25, shuffle=False, num_workers=0, pin_memory=True)
