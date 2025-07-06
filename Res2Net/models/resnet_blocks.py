@@ -1,5 +1,4 @@
 ## ResNet Blocks and SE Blocks
-
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
@@ -290,6 +289,11 @@ class SEBottle2neck(nn.Module):
             type: 'normal': normal set. 'stage': first block of a new stage.
         """
         super(SEBottle2neck, self).__init__()
+        
+        # if isinstance(stride, float):
+        #     raise ValueError(f"Stride must be int or tuple of ints. Got: {stride}")
+        # if isinstance(stride, int):
+        #     stride = (stride, stride)
 
         width = int(math.floor(planes * (baseWidth / 64.0)))
         self.conv1 = nn.Conv2d(inplanes,

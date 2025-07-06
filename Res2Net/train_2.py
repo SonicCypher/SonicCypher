@@ -116,9 +116,11 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=10, pre
         else:
             print("No pretrained model found, training from scratch.")
             start_epoch = 1 
+            best_val_loss = float('inf')
     else:
         print("Training from scratch.")
         start_epoch = 1
+        best_val_loss = float('inf')
 
     model.to(device)
     # criterion = nn.CrossEntropyLoss()
@@ -164,12 +166,16 @@ def train_model(model,train_loader, val_loader, epochs, device, patience=10, pre
                 
                 outputs = model(inputs)
                 loss = criterion(outputs, labels)
+                # print(f"Validation Loss large: {loss.item():.4f}")
                 val_loss += loss.item()
                 _, predicted = outputs.max(1)
+                # print predicted
+                # print(predicted)
 
                 total += labels.size(0)
                 correct += predicted.eq(labels).sum().item()
-
+                
+        print(f"validation loss not divided by len: {val_loss:.4f} and len of loader: {len(val_loader):.4f}")
         val_accuracy = 100.0 * correct / total
         current_val_loss = val_loss / len(val_loader)
         print(f"length of val_loader: {len(val_loader)}")
